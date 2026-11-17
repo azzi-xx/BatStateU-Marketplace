@@ -1,0 +1,31 @@
+{
+  "name": "batstateu-marketplace",
+  "version": "1.0.0",
+  "description": "BatStateU Marketplace — a campus buy-and-sell platform built on a 3-tier architecture (HTML/CSS/JS presentation, Node.js/Express logic, SQLite data).",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "seed": "node database/seed.js"
+  },
+  "keywords": [
+    "marketplace",
+    "express",
+    "sqlite",
+    "three-tier"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^13.2.0",
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0",
+    "express-session": "^1.19.0",
+    "multer": "^2.5.0"
+  }
+}

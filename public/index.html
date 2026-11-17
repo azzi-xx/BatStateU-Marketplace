@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BatStateU Marketplace — Buy &amp; sell on campus</title>
+    <meta
+      name="description"
+      content="A campus marketplace for BatStateU students. Buy and sell textbooks, calculators, uniforms, and dorm essentials."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23b5121b'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='18' font-weight='bold' fill='white' text-anchor='middle'%3EB%3C/text%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <header class="nav">
+      <div class="nav__inner">
+        <a class="brand" href="/">
+          <span class="brand__mark">B</span>
+          <span class="brand__text">BatStateU<span>Marketplace</span></span>
+        </a>
+        <nav class="nav__actions" id="navActions" aria-label="Account">
+          <a class="btn btn--ghost" href="/login.html">Log in</a>
+          <a class="btn btn--primary" href="/register.html">Sign up</a>
+        </nav>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="hero__inner">
+        <p class="eyebrow">BatStateU · Campus marketplace</p>
+        <h1>Buy &amp; sell inside campus.</h1>
+        <p class="hero__lead">
+          Textbooks, calculators, uniforms, and dorm gear — from students you actually sit next to.
+        </p>
+
+        <form class="hero__search" id="heroSearch" role="search">
+          <label class="visually-hidden" for="qInput">Search listings</label>
+          <input
+            id="qInput"
+            name="q"
+            type="search"
+            placeholder="What are you looking for?"
+            autocomplete="off"
+          />
+          <button class="btn btn--primary" type="submit">Search</button>
+        </form>
+
+        <p class="hero__stats" id="heroStats">Loading listings…</p>
+      </div>
+    </section>
+
+    <section class="filters">
+      <div class="filters__inner">
+        <div class="chips" id="categoryChips" role="group" aria-label="Filter by category"></div>
+        <div class="filters__right">
+          <span class="muted" id="resultCount">Loading…</span>
+          <label class="visually-hidden" for="sortSelect">Sort listings</label>
+          <select id="sortSelect">
+            <option value="newest">Newest first</option>
+            <option value="price_asc">Price: low to high</option>
+            <option value="price_desc">Price: high to low</option>
+            <option value="popular">Most viewed</option>
+            <option value="oldest">Oldest first</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <main class="container">
+      <section class="section">
+        <div class="grid" id="listingGrid"></div>
+        <div class="pagination" id="pagination"></div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer__inner">
+        <p><strong>BatStateU Marketplace</strong> — student project for IT 314 &amp; System Integration and Architecture.</p>
+        <p>3-tier: HTML/CSS/JS &rarr; Node.js + Express &rarr; SQLite</p>
+      </div>
+    </footer>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/app.js"></script>
+    <script src="/js/marketplace.js"></script>
+  </body>
+</html>

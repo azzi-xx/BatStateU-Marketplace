@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>My listings · BatStateU Marketplace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23b5121b'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='18' font-weight='bold' fill='white' text-anchor='middle'%3EB%3C/text%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <header class="nav">
+      <div class="nav__inner">
+        <a class="brand" href="/">
+          <span class="brand__mark">B</span>
+          <span class="brand__text">BatStateU<span>Marketplace</span></span>
+        </a>
+        <form class="nav__search" action="/" method="get" role="search">
+          <label class="visually-hidden" for="navSearch">Search listings</label>
+          <input id="navSearch" name="q" type="search" placeholder="Search books, calculators, uniforms…" autocomplete="off" />
+        </form>
+        <nav class="nav__actions" id="navActions" aria-label="Account"></nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <div class="page-head">
+        <div>
+          <h1 id="accountName">My listings</h1>
+          <p id="accountMeta">Loading your account…</p>
+        </div>
+        <div class="page-head__actions">
+          <span class="pill pill--outline" id="listingCount">—</span>
+        </div>
+      </div>
+
+      <div class="rows" id="myListings" style="padding-bottom: 72px">
+        <div class="skeleton-card" style="padding: 14px">
+          <div class="skeleton skeleton--line short"></div>
+          <div class="skeleton skeleton--line"></div>
+        </div>
+        <div class="skeleton-card" style="padding: 14px">
+          <div class="skeleton skeleton--line short"></div>
+          <div class="skeleton skeleton--line"></div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer__inner">
+        <p><strong>BatStateU Marketplace</strong> — student project for IT 314 &amp; System Integration and Architecture.</p>
+        <p>3-tier: HTML/CSS/JS &rarr; Node.js + Express &rarr; SQLite</p>
+      </div>
+    </footer>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/app.js"></script>
+    <script src="/js/account.js"></script>
+  </body>
+</html>
