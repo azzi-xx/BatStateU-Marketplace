@@ -57,6 +57,43 @@ function countAll() {
   return db.prepare('SELECT COUNT(*) AS n FROM users').get().n;
 }
 
+/** Admin user list with per-user activity counts. */
+function list({ q, role, status, limit = 200 } = {}) {
+  const where = [];
+  const params = {};
+
+  if (q) {
+    where.push('(u.full_name LIKE @q OR u.email LIKE @q OR u.student_id LIKE @q)');
+    params.q = `%${q}%`;
+  }
+  if (role && role !== 'all') {
+    where.push('u.role = @role');
+    params.role = role;
+  }
+  if (status && status !== 'all') {
+    where.push('u.status = @status');
+    params.status = status;
+  }
+
+  return db
+    .prepare(
+      `SELECT ${PUBLIC_COLUMNS},
+              (SELECT COUNT(*) FROM listings l WHERE l.seller_id = u.id AND l.status <> 'removed') AS listingCount,
+              (SELECT COUNT(*) FROM orders o WHERE o.buyer_id = u.id) AS purchaseCount,
+              (SELECT COUNT(*) FROM orders o WHERE o.seller_id = u.id AND o.status = 'completed') AS salesCount
+         FROM users u
+         ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+        ORDER BY u.created_at DESC
+        LIMIT @limit`
+    )
+    .all({ ...params, limit });
+}
+
+function setStatus(id, status) {
+  db.prepare('UPDATE users SET status = ? WHERE id = ?').run(status, id);
+  return findPublicById(id);
+}
+
 module.exports = {
   findPublicById,
   findByEmail,
@@ -66,4 +103,6 @@ module.exports = {
   create,
   touchLastSeen,
   countAll,
+  list,
+  setStatus,
 };

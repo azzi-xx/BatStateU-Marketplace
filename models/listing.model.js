@@ -121,6 +121,30 @@ function countAll() {
   return db.prepare("SELECT COUNT(*) AS n FROM listings WHERE status <> 'removed'").get().n;
 }
 
+/** Admin listing table: includes removed rows so moderation stays visible. */
+function adminList({ q, status, limit = 200 } = {}) {
+  const where = [];
+  const params = {};
+
+  if (q) {
+    where.push('(l.title LIKE @q OR u.full_name LIKE @q)');
+    params.q = `%${q}%`;
+  }
+  if (status && status !== 'all') {
+    where.push('l.status = @status');
+    params.status = status;
+  }
+
+  return db
+    .prepare(
+      `SELECT ${LIST_COLUMNS} ${FROM_JOINS}
+        ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+        ORDER BY l.created_at DESC
+        LIMIT @limit`
+    )
+    .all({ ...params, limit });
+}
+
 module.exports = {
   list,
   findById,
@@ -129,5 +153,6 @@ module.exports = {
   setStatus,
   incrementViews,
   countAll,
+  adminList,
   SORT_MAP,
 };

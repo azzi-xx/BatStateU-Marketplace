@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin · Data lab · BatStateU Marketplace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23b5121b'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='18' font-weight='bold' fill='white' text-anchor='middle'%3EB%3C/text%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <header class="nav">
+      <div class="nav__inner">
+        <a class="brand" href="/">
+          <span class="brand__mark">B</span>
+          <span class="brand__text">BatStateU<span>Marketplace</span></span>
+        </a>
+        <form class="nav__search" action="/" method="get" role="search">
+          <label class="visually-hidden" for="navSearch">Search listings</label>
+          <input id="navSearch" name="q" type="search" placeholder="Search books, calculators, uniforms…" autocomplete="off" />
+        </form>
+        <nav class="nav__actions" id="navActions" aria-label="Account"></nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <div class="page-head">
+        <div>
+          <h1>Data lab</h1>
+          <p>Watch the data tier work: tables, recent rows, the SQL that each request runs, and the row → JSON mapping.</p>
+        </div>
+      </div>
+
+      <nav class="admin-subnav" aria-label="Admin sections">
+        <a class="admin-subnav__item" data-page="dashboard" href="/admin/dashboard.html">Dashboard</a>
+        <a class="admin-subnav__item" data-page="users" href="/admin/users.html">Users</a>
+        <a class="admin-subnav__item" data-page="listings" href="/admin/listings.html">Listings</a>
+        <a class="admin-subnav__item" data-page="orders" href="/admin/orders.html">Orders</a>
+        <a class="admin-subnav__item" data-page="data" href="/admin/data.html">Data lab</a>
+        <a class="admin-subnav__item admin-subnav__back" href="/">← Marketplace</a>
+      </nav>
+
+      <section class="admin-card">
+        <div class="admin-card__head">
+          <h2>Tables in the database</h2>
+          <span class="admin-note">row counts and column types from <code>PRAGMA table_info</code></span>
+        </div>
+        <div class="table-wrap" id="tablesWrap"></div>
+      </section>
+
+      <section class="admin-card">
+        <div class="admin-card__head">
+          <h2>Recent rows</h2>
+          <span class="admin-note">six rows from each table, newest first</span>
+        </div>
+        <div class="data-lab__grid" id="recentWrap"></div>
+      </section>
+
+      <section class="admin-card">
+        <div class="admin-card__head">
+          <h2>SQL stream</h2>
+          <div class="admin-tools" style="margin:0">
+            <label class="admin-note" style="display:flex;align-items:center;gap:6px">
+              <input type="checkbox" id="streamPause" /> Pause
+            </label>
+            <button class="btn btn--ghost btn--sm" type="button" id="streamClear">Clear view</button>
+          </div>
+        </div>
+        <div class="sql-feed" id="sqlFeed">
+          <div class="empty">
+            <div class="empty__icon">⏱</div>
+            <h3>Waiting for queries</h3>
+            <p>Browse a page or open an order to see the SQL it runs.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-card">
+        <div class="admin-card__head">
+          <h2>Pipeline: one listing, all three layers</h2>
+          <span class="admin-note">raw row → mapped JSON → activity</span>
+        </div>
+        <form class="admin-tools" id="pipelineForm">
+          <input type="number" id="pipelineId" min="1" placeholder="Listing ID (e.g. 17)" />
+          <button class="btn btn--dark btn--sm" type="submit">Inspect</button>
+        </form>
+        <div id="pipelineOut"></div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer__inner">
+        <p><strong>BatStateU Marketplace</strong> — student project for IT 314 &amp; System Integration and Architecture.</p>
+        <p>Data lab: every statement is captured by <code>config/db.js</code> and attributed to the request that ran it.</p>
+      </div>
+    </footer>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/app.js"></script>
+    <script src="/js/admin.js"></script>
+    <script src="/js/admin-data.js"></script>
+  </body>
+</html>

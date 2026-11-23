@@ -14,6 +14,9 @@ router.get('/health', (_req, res) => {
 router.use('/auth', require('./auth.routes'));
 router.use('/listings', require('./listing.routes'));
 router.use('/categories', require('./category.routes'));
+router.use('/orders', require('./order.routes'));
+router.use('/messages', require('./message.routes'));
+router.use('/admin', require('./admin.routes'));
 
 router.use(apiNotFound);
 

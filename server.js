@@ -13,6 +13,7 @@ const session = require('express-session');
 
 const { applySchema, isEmpty, DB_PATH } = require('./config/db');
 const { attachUser } = require('./middleware/auth');
+const { traceQueries } = require('./middleware/trace');
 const { errorHandler } = require('./middleware/error');
 const apiRoutes = require('./routes');
 
@@ -59,6 +60,7 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(traceQueries);
 app.use(attachUser);
 app.use('/api', apiRoutes);
 app.use(express.static(PUBLIC_DIR, { extensions: ['html'] }));

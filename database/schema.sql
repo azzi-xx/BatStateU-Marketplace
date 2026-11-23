@@ -48,3 +48,53 @@ CREATE INDEX IF NOT EXISTS idx_listings_category    ON listings (category_id);
 CREATE INDEX IF NOT EXISTS idx_listings_seller      ON listings (seller_id);
 CREATE INDEX IF NOT EXISTS idx_listings_created_at  ON listings (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_users_status         ON users (status);
+
+-- ============================================================================
+-- Phase 4 — orders (buyer requests → seller confirms)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS orders (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  listing_id      INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+  buyer_id        INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  seller_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  -- Price is snapshotted at request time so later edits cannot rewrite history.
+  amount_centavos INTEGER NOT NULL CHECK (amount_centavos >= 0),
+  status          TEXT    NOT NULL DEFAULT 'pending'
+                  CHECK (status IN ('pending', 'completed', 'cancelled')),
+  note            TEXT,
+  created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT    NOT NULL DEFAULT (datetime('now')),
+  completed_at    TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_orders_listing ON orders (listing_id);
+CREATE INDEX IF NOT EXISTS idx_orders_buyer   ON orders (buyer_id);
+CREATE INDEX IF NOT EXISTS idx_orders_seller  ON orders (seller_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status  ON orders (status);
+CREATE INDEX IF NOT EXISTS idx_orders_created ON orders (created_at DESC);
+
+-- A listing can only have ONE open request at a time. Enforced by the database,
+-- not just by application code.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_one_pending
+  ON orders (listing_id) WHERE status = 'pending';
+
+-- ============================================================================
+-- Phase 5 — messages (buyer ↔ seller, threaded per listing)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS messages (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  listing_id   INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+  sender_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  recipient_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  body         TEXT    NOT NULL CHECK (length(body) BETWEEN 1 AND 1000),
+  read_at      TEXT,
+  created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_messages_listing   ON messages (listing_id);
+CREATE INDEX IF NOT EXISTS idx_messages_sender    ON messages (sender_id);
+CREATE INDEX IF NOT EXISTS idx_messages_recipient ON messages (recipient_id);
+CREATE INDEX IF NOT EXISTS idx_messages_created   ON messages (created_at DESC);
+

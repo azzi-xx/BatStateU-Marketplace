@@ -7,6 +7,7 @@ const validate = require('../utils/validate');
 const { removeUpload } = require('../utils/files');
 const listingModel = require('../models/listing.model');
 const categoryModel = require('../models/category.model');
+const orderModel = require('../models/order.model');
 
 const CONDITIONS = ['new', 'like_new', 'used', 'for_parts'];
 const MAX_PAGE_SIZE = 48;
@@ -85,7 +86,41 @@ function getById(id, viewer = null) {
   }
 
   listingModel.incrementViews(row.id);
-  return { ...toApi(row), views: row.views + 1, isOwner: Boolean(isOwner) };
+
+  // The detail page needs three pieces of order context:
+  //  - viewerOrder     : the current buyer's own pending request (so it can cancel)
+  //  - incomingRequest : the seller's pending request (so it can confirm)
+  // The listing row itself only knows "reserved"; these explain why.
+  const pending = orderModel.findPendingForListing(row.id);
+
+  const viewerOrder =
+    pending && viewer && pending.buyerId === viewer.id
+      ? {
+          id: pending.id,
+          status: pending.status,
+          amount: pending.amountCentavos / 100,
+          createdAt: pending.createdAt,
+        }
+      : null;
+
+  const incomingRequest =
+    pending && isOwner
+      ? {
+          id: pending.id,
+          buyerId: pending.buyerId,
+          buyerName: pending.buyerName,
+          note: pending.note,
+          createdAt: pending.createdAt,
+        }
+      : null;
+
+  return {
+    ...toApi(row),
+    views: row.views + 1,
+    isOwner: Boolean(isOwner),
+    viewerOrder,
+    incomingRequest,
+  };
 }
 
 function normalizeFields(input, { partial }) {

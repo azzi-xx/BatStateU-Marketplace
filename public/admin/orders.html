@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin · Orders · BatStateU Marketplace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23b5121b'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='18' font-weight='bold' fill='white' text-anchor='middle'%3EB%3C/text%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <header class="nav">
+      <div class="nav__inner">
+        <a class="brand" href="/">
+          <span class="brand__mark">B</span>
+          <span class="brand__text">BatStateU<span>Marketplace</span></span>
+        </a>
+        <form class="nav__search" action="/" method="get" role="search">
+          <label class="visually-hidden" for="navSearch">Search listings</label>
+          <input id="navSearch" name="q" type="search" placeholder="Search books, calculators, uniforms…" autocomplete="off" />
+        </form>
+        <nav class="nav__actions" id="navActions" aria-label="Account"></nav>
+      </div>
+    </header>
+
+    <main class="container">
+      <div class="page-head">
+        <div>
+          <h1>Orders</h1>
+          <p>Every buy request, read-only. Buyers request, sellers confirm.</p>
+        </div>
+        <div class="page-head__actions">
+          <span class="pill pill--outline" id="orderCount">—</span>
+        </div>
+      </div>
+
+      <nav class="admin-subnav" aria-label="Admin sections">
+        <a class="admin-subnav__item" data-page="dashboard" href="/admin/dashboard.html">Dashboard</a>
+        <a class="admin-subnav__item" data-page="users" href="/admin/users.html">Users</a>
+        <a class="admin-subnav__item" data-page="listings" href="/admin/listings.html">Listings</a>
+        <a class="admin-subnav__item" data-page="orders" href="/admin/orders.html">Orders</a>
+        <a class="admin-subnav__item" data-page="data" href="/admin/data.html">Data lab</a>
+        <a class="admin-subnav__item admin-subnav__back" href="/">← Marketplace</a>
+      </nav>
+
+      <form class="admin-tools" id="orderFilters">
+        <select name="status" id="orderStatus">
+          <option value="all">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <button class="btn btn--dark btn--sm" type="submit">Filter</button>
+      </form>
+
+      <section class="admin-card">
+        <div class="table-wrap" id="ordersTable">
+          <div class="skeleton skeleton--line short"></div>
+          <div class="skeleton skeleton--line"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer__inner">
+        <p><strong>BatStateU Marketplace</strong> — student project for IT 314 &amp; System Integration and Architecture.</p>
+        <p>Order transitions run inside database transactions.</p>
+      </div>
+    </footer>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/app.js"></script>
+    <script src="/js/admin.js"></script>
+    <script src="/js/admin-orders.js"></script>
+  </body>
+</html>
