@@ -35,6 +35,9 @@ function toApi(row) {
       name: row.sellerName,
       program: row.sellerProgram,
       yearLevel: row.sellerYearLevel,
+      organization: String(row.sellerEmail || '').toLowerCase().endsWith('@g.batstate-u.edu.ph')
+        ? 'internal'
+        : 'external',
     },
   };
 }

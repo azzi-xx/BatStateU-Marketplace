@@ -11,6 +11,9 @@ function attachUser(req, _res, next) {
   if (userId) {
     const user = userModel.findPublicById(userId);
     if (user && user.status === 'active') {
+      user.organization = String(user.email || '').toLowerCase().endsWith('@g.batstate-u.edu.ph')
+        ? 'internal'
+        : 'external';
       req.user = user;
     } else {
       delete req.session.userId;

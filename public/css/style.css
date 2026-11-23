@@ -455,12 +455,27 @@ textarea {
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  scrollbar-width: none;
-  padding: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: #c9cdd4 transparent;
+  padding: 2px 2px 6px;
+  scroll-behavior: smooth;
 }
 
 .chips::-webkit-scrollbar {
-  display: none;
+  height: 8px;
+}
+
+.chips::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chips::-webkit-scrollbar-thumb {
+  background: #c9cdd4;
+  border-radius: 999px;
+}
+
+.chips::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
 }
 
 .chip {
@@ -1928,6 +1943,17 @@ select:focus {
 .pill--suspended {
   background: var(--accent-soft);
   color: #b91c1c;
+}
+
+.pill--external {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.pill--sm {
+  font-size: 10px;
+  padding: 2px 7px;
+  vertical-align: middle;
 }
 
 /* ------------------------------------------------------------- messages -- */

@@ -21,7 +21,11 @@
     const parts = [user.program, user.yearLevel ? `Year ${user.yearLevel}` : null, user.studentId]
       .filter(Boolean)
       .join(' · ');
-    metaSlot.textContent = parts || user.email;
+    metaSlot.innerHTML = `${escapeHtml(parts || user.email)}${
+      user.organization === 'external'
+        ? ' · <span class="pill pill--external">Outside organization</span>'
+        : ''
+    }`;
   }
 
   function row(listing) {

@@ -17,6 +17,11 @@ const listingService = require('./listing.service');
 const queryLog = require('../utils/queryLog');
 
 const USER_STATUSES = ['active', 'suspended'];
+
+function organizationFor(email) {
+  const domain = String(email || '').toLowerCase().split('@')[1] || '';
+  return domain === 'g.batstate-u.edu.ph' ? 'internal' : 'external';
+}
 const USER_ROLES = ['student', 'admin'];
 const LISTING_STATUSES = ['available', 'reserved', 'sold', 'removed'];
 const ORDER_STATUSES = ['pending', 'completed', 'cancelled'];
@@ -50,6 +55,7 @@ function toUserApi(row) {
     program: row.program,
     yearLevel: row.yearLevel,
     status: row.status,
+    organization: organizationFor(row.email),
     lastSeenAt: row.lastSeenAt,
     createdAt: row.createdAt,
     listingCount: row.listingCount ?? 0,

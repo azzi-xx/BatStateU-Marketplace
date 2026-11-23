@@ -23,7 +23,8 @@ const LIST_COLUMNS = `
   u.id         AS sellerId,
   u.full_name  AS sellerName,
   u.program    AS sellerProgram,
-  u.year_level AS sellerYearLevel
+  u.year_level AS sellerYearLevel,
+  u.email      AS sellerEmail
 `;
 
 const FROM_JOINS = `

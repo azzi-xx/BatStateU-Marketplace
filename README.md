@@ -4,8 +4,6 @@ A campus buy-and-sell platform for Batangas State University students — think 
 
 Built as a **strict 3-tier application** for IT 314 (Web Systems and Architecture) and System Integration and Architecture.
 
-**Current status: Phases 1–7 complete** — database, authentication, listings, buy requests, messaging, and the admin dashboard.
-
 The flow is intentionally two-sided: a buyer **requests** an item, the seller **confirms** it, and only then is the listing marked sold. Nothing is instantly "bought", so both students agree before money changes hands.
 
 ---
@@ -17,7 +15,7 @@ The flow is intentionally two-sided: a buyer **requests** an item, the seller **
 | Presentation (tier 1) | HTML5, CSS3, vanilla JavaScript, `fetch()` |
 | Application logic (tier 2) | Node.js, Express 5, express-session, bcryptjs, multer |
 | Data (tier 3) | SQLite via `better-sqlite3` |
-| Charts (Phase 6) | Chart.js |
+| Charts | Chart.js (admin dashboard) |
 
 ## 2. Three-tier architecture
 
@@ -116,9 +114,9 @@ All demo accounts use the password **`password123`**.
 
 | Role | Email |
 | --- | --- |
-| Student | `juan.delacruz@batstate-u.edu.ph` |
-| Student | `maria.santos@batstate-u.edu.ph` |
-| Admin | `admin@batstate-u.edu.ph` |
+| Student | `22-01001@g.batstate-u.edu.ph` |
+| Student | `22-01002@g.batstate-u.edu.ph` |
+| Admin | `admin@g.batstate-u.edu.ph` |
 
 Registration is restricted to `@batstate-u.edu.ph` addresses. To change that, copy `.env.example` to `.env` and edit `ALLOWED_EMAIL_DOMAIN`.
 
@@ -142,7 +140,7 @@ Registration is restricted to `@batstate-u.edu.ph` addresses. To change that, co
 
 Owner-only rules are enforced in the **service layer**, not just hidden in the UI: editing or deleting someone else's listing returns `403` even if you call the API directly. The same is true for confirming a sale (seller only) and every `/api/admin/*` route (`requireAdmin` plus a role check in `services/admin.service.js`).
 
-## 6. API endpoints (Phase 1–7)
+## 6. API endpoints
 
 | Method | Endpoint | Auth | Purpose |
 | --- | --- | --- | --- |
@@ -301,20 +299,6 @@ IT 314/
     │        admin-dashboard.js  admin-users.js  admin-listings.js  admin-orders.js  admin-data.js
     └── uploads/               # listing photos (gitignored)
 ```
-
-## 10. Roadmap
-
-| Phase | Scope | Status |
-| --- | --- | --- |
-| 1 | Schema, seed data, project scaffold | ✅ done |
-| 2 | Authentication, sessions, role guard | ✅ done |
-| 3 | Listings: browse, search, filter, create, edit, delete | ✅ done |
-| 4 | Orders: request to buy → seller confirms → purchases/sales | ✅ done |
-| 5 | Buyer ↔ seller messaging (polled, threaded per listing) | ✅ done |
-| 6 | Admin dashboard: KPIs, Chart.js charts, user/listings/orders management | ✅ done |
-| 7 | Polish, responsive pass, documentation set | ✅ done |
-
-The system now covers the full campus marketplace loop: discover → request → confirm → message → moderate.
 
 ## 11. Troubleshooting
 

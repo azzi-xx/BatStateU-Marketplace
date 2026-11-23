@@ -23,6 +23,7 @@
         <td>
           <span class="strong">${escapeHtml(user.fullName)}</span>
           <span class="table-sub">${escapeHtml(user.email)}</span>
+          ${user.organization === 'external' ? '<span class="pill pill--external" style="margin-top:4px">Outside org</span>' : ''}
         </td>
         <td>
           ${escapeHtml(user.program || '—')}

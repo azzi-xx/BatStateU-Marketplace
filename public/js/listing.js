@@ -103,7 +103,11 @@
           <div class="seller">
             <div class="seller__avatar">${escapeHtml(initials(seller.name))}</div>
             <div>
-              <div class="seller__name">${escapeHtml(seller.name)}</div>
+              <div class="seller__name">${escapeHtml(seller.name)}${
+              seller.organization === 'external'
+                ? ' <span class="pill pill--external pill--sm">Outside org</span>'
+                : ''
+            }</div>
               <div class="seller__meta">${escapeHtml(sellerMeta || 'BatStateU student')}</div>
             </div>
           </div>

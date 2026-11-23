@@ -864,7 +864,7 @@ async function seed() {
     insertUser.run({
       studentId: 'ADMIN-001',
       fullName: 'Marketplace Admin',
-      email: 'admin@batstate-u.edu.ph',
+      email: 'admin@g.batstate-u.edu.ph',
       passwordHash,
       role: 'admin',
       program: null,
@@ -878,7 +878,7 @@ async function seed() {
       const info = insertUser.run({
         studentId: u.studentId,
         fullName: u.fullName,
-        email: u.email,
+        email: `${u.studentId}@g.batstate-u.edu.ph`,
         passwordHash,
         role: 'student',
         program: u.program,
@@ -887,6 +887,19 @@ async function seed() {
         createdAt: sqliteDate(u.daysAgo),
       });
       return Number(info.lastInsertRowid);
+    });
+
+    // External (outside the organization) account — demonstrates the marker.
+    insertUser.run({
+      studentId: 'EXT-0001',
+      fullName: 'Guest User',
+      email: 'guest.user@gmail.com',
+      passwordHash,
+      role: 'student',
+      program: 'External',
+      yearLevel: null,
+      lastSeenAt: sqliteDate(0, 30),
+      createdAt: sqliteDate(15),
     });
 
     // Categories
@@ -959,7 +972,7 @@ async function seed() {
   console.log('');
   console.log('Seed complete.');
   console.log(`  Database : ${DB_PATH}`);
-  console.log(`  Users    : 1 admin + ${USERS.length} students`);
+  console.log(`  Users    : 1 admin + ${USERS.length + 1} students (${USERS.length} campus + 1 external)`);
   console.log(`  Listings : ${ALL_LISTINGS.length} (${LISTINGS.length} curated + ${GENERATED_LISTINGS.length} generated)`);
   const orderCounts = ALL_ORDERS.reduce(
     (acc, order) => {
@@ -974,8 +987,9 @@ async function seed() {
   console.log(`  Messages : ${ALL_MESSAGES.length}`);
   console.log('');
   console.log('Demo accounts (password for all: ' + DEMO_PASSWORD + ')');
-  console.log('  Student : juan.delacruz@batstate-u.edu.ph');
-  console.log('  Admin   : admin@batstate-u.edu.ph');
+  console.log('  Student : 22-01001@g.batstate-u.edu.ph');
+  console.log('  Admin   : admin@g.batstate-u.edu.ph');
+  console.log('  External: guest.user@gmail.com (shows the "outside organization" marker)');
   console.log('');
 }
 

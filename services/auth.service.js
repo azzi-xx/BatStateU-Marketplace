@@ -7,8 +7,13 @@ const AppError = require('../utils/AppError');
 const validate = require('../utils/validate');
 const userModel = require('../models/user.model');
 
-const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN || 'batstate-u.edu.ph').toLowerCase();
+const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN || 'g.batstate-u.edu.ph').toLowerCase();
 const BCRYPT_ROUNDS = 10;
+
+function organizationFor(email) {
+  const domain = String(email || '').toLowerCase().split('@')[1] || '';
+  return domain === 'g.batstate-u.edu.ph' ? 'internal' : 'external';
+}
 
 function toPublicUser(user) {
   if (!user) return null;
@@ -21,6 +26,7 @@ function toPublicUser(user) {
     program: user.program,
     yearLevel: user.yearLevel,
     status: user.status,
+    organization: organizationFor(user.email),
     createdAt: user.createdAt,
   };
 }
