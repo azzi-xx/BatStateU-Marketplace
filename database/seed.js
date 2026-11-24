@@ -40,7 +40,6 @@ const CAMPUSES = [
   { name: 'Lipa', slug: 'lipa' },
   { name: 'Nasugbu', slug: 'nasugbu' },
   { name: 'Malvar', slug: 'malvar' },
-  { name: 'LIMA', slug: 'lima' },
 ];
 
 const USERS = [

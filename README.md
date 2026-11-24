@@ -127,7 +127,7 @@ Accounts that do not use the BatStateU student format (for example the seeded `g
 
 | Page | URL | Notes |
 | --- | --- | --- |
-| Marketplace | `/` | Search, category chips, campus chips, sorting, pagination |
+| Marketplace | `/` | Search, category chips, campus chips, sorting, pagination; hero shows a randomly picked BSU campus photo |
 | Listing detail | `/listing.html?id=1` | Photos, campus label, seller card, view counter, owner actions |
 | Log in | `/login.html` | Redirects back to `?next=` after login |
 | Sign up | `/register.html` | School-email validation, campus picker, bcrypt hashing |

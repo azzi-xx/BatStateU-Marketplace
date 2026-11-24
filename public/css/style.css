@@ -378,10 +378,39 @@ textarea {
   overflow: hidden;
   border-bottom: 4px solid var(--ink);
   background-color: var(--ink);
+  /* The dark overlay keeps white/gold text readable over bright campus photos. */
   background-image:
-    repeating-linear-gradient(135deg, transparent 0 22px, rgba(200, 16, 46, 0.28) 22px 32px),
-    linear-gradient(120deg, #1c1c1c 0%, #2a0a10 100%);
+    linear-gradient(180deg, rgba(12, 12, 12, 0.76), rgba(12, 12, 12, 0.86)),
+    var(--hero-campus-image, url('/images/campuses/pablo-borbon.jpg'));
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   color: #fff;
+}
+
+/* hero-campus.js adds exactly one of these to <html> on every page load. */
+.hero-campus-1 { --hero-campus-image: url('/images/campuses/pablo-borbon.jpg'); --hero-campus-name: 'Pablo Borbon'; }
+.hero-campus-2 { --hero-campus-image: url('/images/campuses/alangilan.jpg'); --hero-campus-name: 'Alangilan'; }
+.hero-campus-3 { --hero-campus-image: url('/images/campuses/lipa.jpg'); --hero-campus-name: 'Lipa'; }
+.hero-campus-4 { --hero-campus-image: url('/images/campuses/nasugbu.jpg'); --hero-campus-name: 'Nasugbu'; }
+.hero-campus-5 { --hero-campus-image: url('/images/campuses/malvar.jpg'); --hero-campus-name: 'Malvar'; }
+
+.hero::after {
+  content: '📍 ' var(--hero-campus-name, 'Pablo Borbon');
+  position: absolute;
+  right: 24px;
+  bottom: 16px;
+  z-index: 2;
+  padding: 4px 11px;
+  border: 2px solid #fff;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .hero__inner {
