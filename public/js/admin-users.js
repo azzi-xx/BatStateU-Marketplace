@@ -29,6 +29,7 @@
           ${escapeHtml(user.program || '—')}
           <span class="table-sub">${user.yearLevel ? `Year ${user.yearLevel}` : escapeHtml(user.studentId || '—')}</span>
         </td>
+        <td>${escapeHtml(user.campus ? user.campus.name : '—')}</td>
         <td>${Admin.statusPill(user.role)}</td>
         <td>${Admin.statusPill(user.status)}</td>
         <td class="num">${user.listingCount}</td>
@@ -58,7 +59,7 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>User</th><th>Program</th><th>Role</th><th>Status</th>
+            <th>User</th><th>Program</th><th>Campus</th><th>Role</th><th>Status</th>
             <th class="num">Listings</th><th class="num">Buys</th><th class="num">Sales</th>
             <th>Last seen</th><th>Action</th>
           </tr>

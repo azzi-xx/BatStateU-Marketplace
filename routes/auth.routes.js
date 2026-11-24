@@ -9,6 +9,7 @@ router.post('/register', asyncHandler(authController.register));
 router.post('/login', asyncHandler(authController.login));
 router.post('/logout', asyncHandler(authController.logout));
 router.get('/me', authController.me);
+router.patch('/me', requireAuth, asyncHandler(authController.updateMe));
 router.post('/heartbeat', requireAuth, asyncHandler(authController.heartbeat));
 
 module.exports = router;

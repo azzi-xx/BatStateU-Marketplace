@@ -30,6 +30,19 @@ const CATEGORIES = [
   { name: 'Others', slug: 'others' },
 ];
 
+/**
+ * Batangas State University campuses. Names only, no abbreviations, so the
+ * marketplace labels read naturally ("Alangilan", not "BatStateU Alangilan").
+ */
+const CAMPUSES = [
+  { name: 'Pablo Borbon', slug: 'pablo-borbon' },
+  { name: 'Alangilan', slug: 'alangilan' },
+  { name: 'Lipa', slug: 'lipa' },
+  { name: 'Nasugbu', slug: 'nasugbu' },
+  { name: 'Malvar', slug: 'malvar' },
+  { name: 'LIMA', slug: 'lima' },
+];
+
 const USERS = [
   {
     studentId: '22-01001',
@@ -818,8 +831,9 @@ function resetTables() {
     DELETE FROM listings;
     DELETE FROM categories;
     DELETE FROM users;
+    DELETE FROM campuses;
     DELETE FROM sqlite_sequence
-      WHERE name IN ('messages', 'orders', 'listings', 'categories', 'users');
+      WHERE name IN ('messages', 'orders', 'listings', 'categories', 'users', 'campuses');
   `);
 }
 
@@ -834,15 +848,17 @@ async function seed() {
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
 
   const insertUser = db.prepare(`
-    INSERT INTO users (student_id, full_name, email, password_hash, role, program, year_level, status, last_seen_at, created_at)
-    VALUES (@studentId, @fullName, @email, @passwordHash, @role, @program, @yearLevel, 'active', @lastSeenAt, @createdAt)
+    INSERT INTO users (student_id, full_name, email, password_hash, role, program, year_level, campus_id, status, last_seen_at, created_at)
+    VALUES (@studentId, @fullName, @email, @passwordHash, @role, @program, @yearLevel, @campusId, 'active', @lastSeenAt, @createdAt)
   `);
+
+  const insertCampus = db.prepare('INSERT INTO campuses (name, slug) VALUES (@name, @slug)');
 
   const insertCategory = db.prepare('INSERT INTO categories (name, slug) VALUES (@name, @slug)');
 
   const insertListing = db.prepare(`
-    INSERT INTO listings (seller_id, category_id, title, description, price_centavos, item_condition, image_path, status, views, created_at, updated_at)
-    VALUES (@sellerId, @categoryId, @title, @description, @priceCentavos, @itemCondition, NULL, @status, @views, @createdAt, @createdAt)
+    INSERT INTO listings (seller_id, category_id, campus_id, title, description, price_centavos, item_condition, image_path, status, views, created_at, updated_at)
+    VALUES (@sellerId, @categoryId, @campusId, @title, @description, @priceCentavos, @itemCondition, NULL, @status, @views, @createdAt, @createdAt)
   `);
 
   const insertOrder = db.prepare(`
@@ -860,6 +876,13 @@ async function seed() {
   );
 
   const run = db.transaction(() => {
+    // Campuses
+    const campusIds = {};
+    for (const campus of CAMPUSES) {
+      const info = insertCampus.run(campus);
+      campusIds[campus.slug] = Number(info.lastInsertRowid);
+    }
+
     // Admin account
     insertUser.run({
       studentId: 'ADMIN-001',
@@ -869,12 +892,17 @@ async function seed() {
       role: 'admin',
       program: null,
       yearLevel: null,
+      campusId: null,
       lastSeenAt: sqliteDate(0, 1),
       createdAt: sqliteDate(180),
     });
 
-    // Students
-    const userIds = USERS.map((u) => {
+    // Students — campus is spread across the list so every campus has listings.
+    const userCampusIds = [];
+    const userIds = USERS.map((u, index) => {
+      const campusId = campusIds[CAMPUSES[index % CAMPUSES.length].slug];
+      userCampusIds.push(campusId);
+
       const info = insertUser.run({
         studentId: u.studentId,
         fullName: u.fullName,
@@ -883,6 +911,7 @@ async function seed() {
         role: 'student',
         program: u.program,
         yearLevel: u.yearLevel,
+        campusId,
         lastSeenAt: u.lastSeenMinutes ? sqliteDate(0, u.lastSeenMinutes) : sqliteDate(u.daysAgo - 5),
         createdAt: sqliteDate(u.daysAgo),
       });
@@ -898,6 +927,7 @@ async function seed() {
       role: 'student',
       program: 'External',
       yearLevel: null,
+      campusId: null,
       lastSeenAt: sqliteDate(0, 30),
       createdAt: sqliteDate(15),
     });
@@ -915,6 +945,7 @@ async function seed() {
       const info = insertListing.run({
         sellerId: userIds[listing.seller],
         categoryId: categoryIds[listing.category],
+        campusId: userCampusIds[listing.seller],
         title: listing.title,
         description: listing.description,
         priceCentavos: Math.round(listing.price * 100),
@@ -973,6 +1004,7 @@ async function seed() {
   console.log('Seed complete.');
   console.log(`  Database : ${DB_PATH}`);
   console.log(`  Users    : 1 admin + ${USERS.length + 1} students (${USERS.length} campus + 1 external)`);
+  console.log(`  Campuses : ${CAMPUSES.length}`);
   console.log(`  Listings : ${ALL_LISTINGS.length} (${LISTINGS.length} curated + ${GENERATED_LISTINGS.length} generated)`);
   const orderCounts = ALL_ORDERS.reduce(
     (acc, order) => {

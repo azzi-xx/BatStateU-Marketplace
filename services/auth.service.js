@@ -6,6 +6,7 @@ const bcrypt = require('bcryptjs');
 const AppError = require('../utils/AppError');
 const validate = require('../utils/validate');
 const userModel = require('../models/user.model');
+const campusModel = require('../models/campus.model');
 
 const ALLOWED_DOMAIN = (process.env.ALLOWED_EMAIL_DOMAIN || 'g.batstate-u.edu.ph').toLowerCase();
 const BCRYPT_ROUNDS = 10;
@@ -13,6 +14,12 @@ const BCRYPT_ROUNDS = 10;
 function organizationFor(email) {
   const domain = String(email || '').toLowerCase().split('@')[1] || '';
   return domain === 'g.batstate-u.edu.ph' ? 'internal' : 'external';
+}
+
+function campusFor(user) {
+  return user.campusId
+    ? { id: user.campusId, name: user.campusName, slug: user.campusSlug }
+    : null;
 }
 
 function toPublicUser(user) {
@@ -25,6 +32,7 @@ function toPublicUser(user) {
     role: user.role,
     program: user.program,
     yearLevel: user.yearLevel,
+    campus: campusFor(user),
     status: user.status,
     organization: organizationFor(user.email),
     createdAt: user.createdAt,
@@ -42,9 +50,13 @@ async function register(input = {}) {
   const plainPassword = validate.password(input.password);
   const program = validate.text(input.program, 'Program', { min: 2, max: 40, required: false }) || null;
   const yearLevel = validate.integer(input.yearLevel, 'Year level', { min: 1, max: 6 });
+  const campusId = validate.integer(input.campusId, 'Campus', { min: 1 });
 
   if (!email.endsWith(`@${ALLOWED_DOMAIN}`)) {
     throw AppError.unprocessable(`Please register with your @${ALLOWED_DOMAIN} email address.`);
+  }
+  if (!campusId || !campusModel.findById(campusId)) {
+    throw AppError.unprocessable('Please choose your BatStateU campus.');
   }
   if (userModel.existsByEmail(email)) {
     throw AppError.conflict('An account with that email already exists.');
@@ -64,9 +76,21 @@ async function register(input = {}) {
     role: 'student',
     program,
     yearLevel,
+    campusId,
   });
 
   return toPublicUser(user);
+}
+
+function changeCampus(input = {}, viewer) {
+  if (!viewer) throw AppError.unauthorized();
+
+  const campusId = validate.integer(input.campusId, 'Campus', { min: 1 });
+  if (!campusId || !campusModel.findById(campusId)) {
+    throw AppError.unprocessable('Please choose a valid BatStateU campus.');
+  }
+
+  return toPublicUser(userModel.setCampus(viewer.id, campusId));
 }
 
 async function login(input = {}) {
@@ -93,4 +117,4 @@ async function login(input = {}) {
   return toPublicUser(user);
 }
 
-module.exports = { register, login, toPublicUser, ALLOWED_DOMAIN };
+module.exports = { register, login, changeCampus, toPublicUser, ALLOWED_DOMAIN };

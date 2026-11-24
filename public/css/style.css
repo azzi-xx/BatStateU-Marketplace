@@ -451,6 +451,14 @@ textarea {
   gap: 16px;
 }
 
+.filters__left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .chips {
   display: flex;
   gap: 8px;
@@ -499,6 +507,26 @@ textarea {
   background: var(--ink);
   border-color: var(--ink);
   color: #fff;
+}
+
+.chip--campus {
+  background: #fff;
+  font-size: 12.5px;
+  padding: 5px 12px;
+}
+
+.chip--campus::before {
+  content: '📍';
+  margin-right: 5px;
+  font-size: 11px;
+}
+
+.chip--campus:first-child::before {
+  content: none;
+}
+
+.chip--campus.is-active::before {
+  filter: grayscale(1) brightness(2);
 }
 
 .filters__right {
@@ -659,6 +687,25 @@ select:focus {
 .badge--available {
   background: var(--green-soft);
   color: var(--green);
+}
+
+/* Campus label sits on the opposite corner from the status badge. */
+.campus-badge {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 2;
+  max-width: calc(100% - 20px);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 650;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--ink-soft);
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .card__body {
@@ -1610,6 +1657,10 @@ select:focus {
     flex-wrap: wrap;
   }
 
+  .filters__left {
+    flex-basis: 100%;
+  }
+
   .filters__right {
     width: 100%;
   }
@@ -1948,6 +1999,11 @@ select:focus {
 .pill--external {
   background: #fef3c7;
   color: #92400e;
+}
+
+.pill--campus {
+  background: #e0ecff;
+  color: #1d4ed8;
 }
 
 .pill--sm {
@@ -2733,5 +2789,60 @@ select:focus {
 
   .code-block {
     max-height: 260px;
+  }
+}
+
+/* ------------------------------------------------------------ campus picker -- */
+.campus-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  margin-bottom: 22px;
+}
+
+.campus-card[hidden] {
+  display: none;
+}
+
+.campus-card h2 {
+  font-size: 14.5px;
+  margin-bottom: 3px;
+}
+
+.campus-card p {
+  font-size: 12.5px;
+  color: var(--muted);
+  max-width: 520px;
+}
+
+.campus-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.campus-form select {
+  min-width: 180px;
+}
+
+@media (max-width: 760px) {
+  .campus-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .campus-form {
+    width: 100%;
+  }
+
+  .campus-form select {
+    flex: 1;
+    min-width: 0;
   }
 }

@@ -36,10 +36,14 @@ function me(req, res) {
   res.json({ user: req.user });
 }
 
+function updateMe(req, res) {
+  res.json({ user: authService.changeCampus(req.body, req.user) });
+}
+
 function heartbeat(req, res) {
   if (!req.user) throw AppError.unauthorized();
   userModel.touchLastSeen(req.user.id);
   res.json({ ok: true });
 }
 
-module.exports = { register, login, logout, me, heartbeat };
+module.exports = { register, login, logout, me, updateMe, heartbeat };

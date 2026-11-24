@@ -71,24 +71,36 @@
     document.title = `${item.title} · BatStateU Marketplace`;
 
     const seller = item.seller;
-    const sellerMeta = [seller.program, seller.yearLevel ? `Year ${seller.yearLevel}` : null]
+    const sellerMeta = [
+      seller.program,
+      seller.yearLevel ? `Year ${seller.yearLevel}` : null,
+      seller.campus ? seller.campus.name : null,
+    ]
       .filter(Boolean)
       .join(' · ');
+
+    const campusLabel = item.campus
+      ? `<span class="pill pill--campus">📍 ${escapeHtml(item.campus.name)}</span>`
+      : '';
 
     root.innerHTML = `
       <div class="detail">
         <div class="detail__media">
           ${mediaInner(item)}
           ${item.status !== 'available' ? `<span class="badge badge--${item.status}">${statusLabel(item.status)}</span>` : ''}
+          ${item.campus ? `<span class="campus-badge">📍 ${escapeHtml(item.campus.name)}</span>` : ''}
         </div>
 
         <aside class="detail__panel">
-          <p class="detail__crumb">${escapeHtml(item.category.name)}</p>
+          <p class="detail__crumb">${escapeHtml(item.category.name)}${
+            item.campus ? ` · ${escapeHtml(item.campus.name)} campus` : ''
+          }</p>
           <h1 class="detail__title">${escapeHtml(item.title)}</h1>
           <p class="detail__price">${peso(item.price)}</p>
 
           <div class="detail__pills">
             <span class="pill pill--${item.status}">${statusLabel(item.status)}</span>
+            ${campusLabel}
             <span class="pill">${escapeHtml(conditionLabel(item.condition))}</span>
             <span class="pill">👁 ${item.views} view${item.views === 1 ? '' : 's'}</span>
           </div>
@@ -115,6 +127,7 @@
           <div class="meta-list">
             <div class="meta-row"><span>Listing ID</span><span>#${item.id}</span></div>
             <div class="meta-row"><span>Category</span><span>${escapeHtml(item.category.name)}</span></div>
+            <div class="meta-row"><span>Campus</span><span>${escapeHtml(item.campus ? item.campus.name : 'Not specified')}</span></div>
             <div class="meta-row"><span>Condition</span><span>${escapeHtml(conditionLabel(item.condition))}</span></div>
             <div class="meta-row"><span>Posted</span><span>${fullDate(item.createdAt)}</span></div>
             <div class="meta-row"><span>Last updated</span><span>${timeAgo(item.updatedAt)}</span></div>

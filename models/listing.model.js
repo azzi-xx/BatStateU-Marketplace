@@ -20,17 +20,25 @@ const LIST_COLUMNS = `
   c.id   AS categoryId,
   c.name AS categoryName,
   c.slug AS categorySlug,
+  ca.id   AS campusId,
+  ca.name AS campusName,
+  ca.slug AS campusSlug,
   u.id         AS sellerId,
   u.full_name  AS sellerName,
   u.program    AS sellerProgram,
   u.year_level AS sellerYearLevel,
-  u.email      AS sellerEmail
+  u.email      AS sellerEmail,
+  uc.id        AS sellerCampusId,
+  uc.name      AS sellerCampusName,
+  uc.slug      AS sellerCampusSlug
 `;
 
 const FROM_JOINS = `
   FROM listings l
   JOIN categories c ON c.id = l.category_id
+  LEFT JOIN campuses ca ON ca.id = l.campus_id
   JOIN users      u ON u.id = l.seller_id
+  LEFT JOIN campuses uc ON uc.id = u.campus_id
 `;
 
 /** Whitelist of sort keys — never interpolate raw user input into SQL. */
@@ -42,18 +50,22 @@ const SORT_MAP = {
   popular: 'l.views DESC, l.created_at DESC',
 };
 
-function buildWhere({ q, categorySlug, sellerId, includeRemoved }) {
+function buildWhere({ q, categorySlug, campusSlug, sellerId, includeRemoved }) {
   const where = [];
   const params = {};
 
   if (!includeRemoved) where.push("l.status <> 'removed'");
   if (q) {
-    where.push('(l.title LIKE @q OR l.description LIKE @q OR c.name LIKE @q)');
+    where.push('(l.title LIKE @q OR l.description LIKE @q OR c.name LIKE @q OR ca.name LIKE @q)');
     params.q = `%${q}%`;
   }
   if (categorySlug) {
     where.push('c.slug = @categorySlug');
     params.categorySlug = categorySlug;
+  }
+  if (campusSlug) {
+    where.push('ca.slug = @campusSlug');
+    params.campusSlug = campusSlug;
   }
   if (sellerId) {
     where.push('l.seller_id = @sellerId');
@@ -63,12 +75,18 @@ function buildWhere({ q, categorySlug, sellerId, includeRemoved }) {
   return { sql: where.length ? `WHERE ${where.join(' AND ')}` : '', params };
 }
 
-function list({ q, categorySlug, sellerId, includeRemoved = false, sort = 'newest', limit = 12, offset = 0 }) {
-  const { sql: whereSql, params } = buildWhere({ q, categorySlug, sellerId, includeRemoved });
+function list({ q, categorySlug, campusSlug, sellerId, includeRemoved = false, sort = 'newest', limit = 12, offset = 0 }) {
+  const { sql: whereSql, params } = buildWhere({ q, categorySlug, campusSlug, sellerId, includeRemoved });
   const orderBy = SORT_MAP[sort] || SORT_MAP.newest;
 
   const total = db
-    .prepare(`SELECT COUNT(*) AS n FROM listings l JOIN categories c ON c.id = l.category_id ${whereSql}`)
+    .prepare(
+      `SELECT COUNT(*) AS n
+         FROM listings l
+         JOIN categories c ON c.id = l.category_id
+         LEFT JOIN campuses ca ON ca.id = l.campus_id
+         ${whereSql}`
+    )
     .get(params).n;
 
   const rows = db
@@ -82,21 +100,22 @@ function findById(id) {
   return db.prepare(`SELECT ${LIST_COLUMNS} ${FROM_JOINS} WHERE l.id = ?`).get(id);
 }
 
-function insert({ sellerId, categoryId, title, description, priceCentavos, itemCondition, imagePath }) {
+function insert({ sellerId, categoryId, campusId, title, description, priceCentavos, itemCondition, imagePath }) {
   const info = db
     .prepare(
-      `INSERT INTO listings (seller_id, category_id, title, description, price_centavos, item_condition, image_path)
-       VALUES (@sellerId, @categoryId, @title, @description, @priceCentavos, @itemCondition, @imagePath)`
+      `INSERT INTO listings (seller_id, category_id, campus_id, title, description, price_centavos, item_condition, image_path)
+       VALUES (@sellerId, @categoryId, @campusId, @title, @description, @priceCentavos, @itemCondition, @imagePath)`
     )
-    .run({ sellerId, categoryId, title, description, priceCentavos, itemCondition, imagePath });
+    .run({ sellerId, categoryId, campusId, title, description, priceCentavos, itemCondition, imagePath });
 
   return findById(info.lastInsertRowid);
 }
 
-function update(id, { categoryId, title, description, priceCentavos, itemCondition, imagePath }) {
+function update(id, { categoryId, campusId, title, description, priceCentavos, itemCondition, imagePath }) {
   db.prepare(
     `UPDATE listings
         SET category_id    = @categoryId,
+            campus_id      = @campusId,
             title          = @title,
             description    = @description,
             price_centavos = @priceCentavos,
@@ -104,7 +123,7 @@ function update(id, { categoryId, title, description, priceCentavos, itemConditi
             image_path     = COALESCE(@imagePath, image_path),
             updated_at     = datetime('now')
       WHERE id = @id`
-  ).run({ id, categoryId, title, description, priceCentavos, itemCondition, imagePath });
+  ).run({ id, categoryId, campusId, title, description, priceCentavos, itemCondition, imagePath });
 
   return findById(id);
 }

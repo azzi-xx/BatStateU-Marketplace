@@ -2,31 +2,39 @@
 const { db } = require('../config/db');
 
 const PUBLIC_COLUMNS = `
-  id,
-  student_id  AS studentId,
-  full_name   AS fullName,
-  email,
-  role,
-  program,
-  year_level  AS yearLevel,
-  status,
-  last_seen_at AS lastSeenAt,
-  created_at  AS createdAt
+  u.id,
+  u.student_id  AS studentId,
+  u.full_name   AS fullName,
+  u.email,
+  u.role,
+  u.program,
+  u.year_level  AS yearLevel,
+  u.campus_id   AS campusId,
+  ca.name       AS campusName,
+  ca.slug       AS campusSlug,
+  u.status,
+  u.last_seen_at AS lastSeenAt,
+  u.created_at  AS createdAt
+`;
+
+const FROM_JOINS = `
+  FROM users u
+  LEFT JOIN campuses ca ON ca.id = u.campus_id
 `;
 
 function findPublicById(id) {
-  return db.prepare(`SELECT ${PUBLIC_COLUMNS} FROM users WHERE id = ?`).get(id);
+  return db.prepare(`SELECT ${PUBLIC_COLUMNS} ${FROM_JOINS} WHERE u.id = ?`).get(id);
 }
 
 function findByEmail(email) {
   return db
-    .prepare(`SELECT ${PUBLIC_COLUMNS}, password_hash AS passwordHash FROM users WHERE email = ?`)
+    .prepare(`SELECT ${PUBLIC_COLUMNS}, u.password_hash AS passwordHash ${FROM_JOINS} WHERE u.email = ?`)
     .get(email);
 }
 
 function findByIdWithHash(id) {
   return db
-    .prepare(`SELECT ${PUBLIC_COLUMNS}, password_hash AS passwordHash FROM users WHERE id = ?`)
+    .prepare(`SELECT ${PUBLIC_COLUMNS}, u.password_hash AS passwordHash ${FROM_JOINS} WHERE u.id = ?`)
     .get(id);
 }
 
@@ -38,13 +46,22 @@ function existsByStudentId(studentId) {
   return !!db.prepare('SELECT 1 FROM users WHERE student_id = ?').get(studentId);
 }
 
-function create({ studentId, fullName, email, passwordHash, role = 'student', program = null, yearLevel = null }) {
+function create({
+  studentId,
+  fullName,
+  email,
+  passwordHash,
+  role = 'student',
+  program = null,
+  yearLevel = null,
+  campusId = null,
+}) {
   const info = db
     .prepare(
-      `INSERT INTO users (student_id, full_name, email, password_hash, role, program, year_level)
-       VALUES (@studentId, @fullName, @email, @passwordHash, @role, @program, @yearLevel)`
+      `INSERT INTO users (student_id, full_name, email, password_hash, role, program, year_level, campus_id)
+       VALUES (@studentId, @fullName, @email, @passwordHash, @role, @program, @yearLevel, @campusId)`
     )
-    .run({ studentId, fullName, email, passwordHash, role, program, yearLevel });
+    .run({ studentId, fullName, email, passwordHash, role, program, yearLevel, campusId });
 
   return findPublicById(info.lastInsertRowid);
 }
@@ -81,7 +98,7 @@ function list({ q, role, status, limit = 200 } = {}) {
               (SELECT COUNT(*) FROM listings l WHERE l.seller_id = u.id AND l.status <> 'removed') AS listingCount,
               (SELECT COUNT(*) FROM orders o WHERE o.buyer_id = u.id) AS purchaseCount,
               (SELECT COUNT(*) FROM orders o WHERE o.seller_id = u.id AND o.status = 'completed') AS salesCount
-         FROM users u
+         ${FROM_JOINS}
          ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
         ORDER BY u.created_at DESC
         LIMIT @limit`
@@ -91,6 +108,11 @@ function list({ q, role, status, limit = 200 } = {}) {
 
 function setStatus(id, status) {
   db.prepare('UPDATE users SET status = ? WHERE id = ?').run(status, id);
+  return findPublicById(id);
+}
+
+function setCampus(id, campusId) {
+  db.prepare('UPDATE users SET campus_id = ? WHERE id = ?').run(campusId, id);
   return findPublicById(id);
 }
 
@@ -105,4 +127,5 @@ module.exports = {
   countAll,
   list,
   setStatus,
+  setCampus,
 };

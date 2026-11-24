@@ -7,6 +7,7 @@ const validate = require('../utils/validate');
 const { removeUpload } = require('../utils/files');
 const listingModel = require('../models/listing.model');
 const categoryModel = require('../models/category.model');
+const campusModel = require('../models/campus.model');
 const orderModel = require('../models/order.model');
 
 const CONDITIONS = ['new', 'like_new', 'used', 'for_parts'];
@@ -30,11 +31,17 @@ function toApi(row) {
       name: row.categoryName,
       slug: row.categorySlug,
     },
+    campus: row.campusId
+      ? { id: row.campusId, name: row.campusName, slug: row.campusSlug }
+      : null,
     seller: {
       id: row.sellerId,
       name: row.sellerName,
       program: row.sellerProgram,
       yearLevel: row.sellerYearLevel,
+      campus: row.sellerCampusId
+        ? { id: row.sellerCampusId, name: row.sellerCampusName, slug: row.sellerCampusSlug }
+        : null,
       organization: String(row.sellerEmail || '').toLowerCase().endsWith('@g.batstate-u.edu.ph')
         ? 'internal'
         : 'external',
@@ -54,6 +61,7 @@ function browse(query = {}, viewer = null) {
   const sort = listingModel.SORT_MAP[query.sort] ? query.sort : 'newest';
   const q = typeof query.q === 'string' ? query.q.trim().slice(0, 80) : '';
   const categorySlug = typeof query.category === 'string' ? query.category.trim() : '';
+  const campusSlug = typeof query.campus === 'string' ? query.campus.trim() : '';
   const onlyMine = query.mine === '1' || query.mine === 'true';
 
   if (onlyMine && !viewer) throw AppError.unauthorized();
@@ -61,6 +69,7 @@ function browse(query = {}, viewer = null) {
   const { rows, total } = listingModel.list({
     q: q || undefined,
     categorySlug: categorySlug || undefined,
+    campusSlug: campusSlug || undefined,
     sellerId: onlyMine ? viewer.id : undefined,
     sort,
     limit,
@@ -156,12 +165,28 @@ function normalizeFields(input, { partial }) {
   return fields;
 }
 
+/** A listing uses the seller's campus by default, but the form may override it. */
+function resolveCampusId(value, fallback) {
+  if (value === undefined || value === null || value === '') {
+    if (fallback) return fallback;
+    throw AppError.unprocessable('Please choose a campus for this listing.');
+  }
+
+  const campusId = validate.integer(value, 'Campus', { min: 1 });
+  if (!campusId || !campusModel.findById(campusId)) {
+    throw AppError.unprocessable('Please choose a valid BatStateU campus.');
+  }
+  return campusId;
+}
+
 function create(input, seller, file) {
   const fields = normalizeFields(input, { partial: false });
+  const campusId = resolveCampusId(input.campusId, seller.campus && seller.campus.id);
 
   const row = listingModel.insert({
     sellerId: seller.id,
     categoryId: fields.categoryId,
+    campusId,
     title: fields.title,
     description: fields.description,
     priceCentavos: fields.priceCentavos,
@@ -184,9 +209,11 @@ function update(id, input, viewer, file) {
   }
 
   const fields = normalizeFields(input, { partial: false });
+  const campusId = resolveCampusId(input.campusId, existing.campusId || (viewer.campus && viewer.campus.id));
 
   const row = listingModel.update(id, {
     categoryId: fields.categoryId,
+    campusId,
     title: fields.title,
     description: fields.description,
     priceCentavos: fields.priceCentavos,

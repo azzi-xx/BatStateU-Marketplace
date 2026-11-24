@@ -27,6 +27,7 @@
         </td>
         <td>${escapeHtml(listing.seller.name)}</td>
         <td>${escapeHtml(listing.category.name)}</td>
+        <td>${escapeHtml(listing.campus ? listing.campus.name : '—')}</td>
         <td class="num">${peso(listing.price)}</td>
         <td>${Admin.statusPill(listing.status)}</td>
         <td>${timeAgo(listing.createdAt)}</td>
@@ -51,7 +52,7 @@
     slot.innerHTML = `
       <table class="data-table">
         <thead>
-          <tr><th>Item</th><th>Seller</th><th>Category</th><th class="num">Price</th><th>Status</th><th>Posted</th><th>Action</th></tr>
+          <tr><th>Item</th><th>Seller</th><th>Category</th><th>Campus</th><th class="num">Price</th><th>Status</th><th>Posted</th><th>Action</th></tr>
         </thead>
         <tbody>${listings.map(row).join('')}</tbody>
       </table>`;

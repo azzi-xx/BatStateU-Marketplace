@@ -8,13 +8,14 @@
 const { db } = require('../config/db');
 
 /** Table names are hardcoded: PRAGMA cannot take a bound parameter. */
-const TABLES = ['users', 'categories', 'listings', 'orders', 'messages'];
+const TABLES = ['users', 'campuses', 'categories', 'listings', 'orders', 'messages'];
 
 function tableCounts() {
   return db
     .prepare(
       `SELECT
          (SELECT COUNT(*) FROM users)      AS users,
+         (SELECT COUNT(*) FROM campuses)   AS campuses,
          (SELECT COUNT(*) FROM categories) AS categories,
          (SELECT COUNT(*) FROM listings)   AS listings,
          (SELECT COUNT(*) FROM orders)     AS orders,

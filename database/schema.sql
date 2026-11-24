@@ -5,6 +5,14 @@
 
 PRAGMA foreign_keys = ON;
 
+-- Batangas State University has several campuses. Users belong to one, and new
+-- listings inherit their seller's campus unless the seller picks another.
+CREATE TABLE IF NOT EXISTS campuses (
+  id   INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE,
+  slug TEXT NOT NULL UNIQUE
+);
+
 CREATE TABLE IF NOT EXISTS users (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   student_id    TEXT    NOT NULL UNIQUE,
@@ -14,6 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
   role          TEXT    NOT NULL DEFAULT 'student' CHECK (role IN ('student', 'admin')),
   program       TEXT,
   year_level    INTEGER CHECK (year_level IS NULL OR (year_level BETWEEN 1 AND 6)),
+  campus_id     INTEGER REFERENCES campuses(id),
   status        TEXT    NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'suspended')),
   last_seen_at  TEXT,
   created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
@@ -29,6 +38,7 @@ CREATE TABLE IF NOT EXISTS listings (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
   seller_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   category_id    INTEGER NOT NULL REFERENCES categories(id),
+  campus_id      INTEGER REFERENCES campuses(id),
   title          TEXT    NOT NULL,
   description    TEXT    NOT NULL DEFAULT '',
   -- Money is stored as an integer number of centavos to avoid floating point drift.

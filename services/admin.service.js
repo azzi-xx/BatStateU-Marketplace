@@ -54,6 +54,7 @@ function toUserApi(row) {
     role: row.role,
     program: row.program,
     yearLevel: row.yearLevel,
+    campus: row.campusId ? { id: row.campusId, name: row.campusName, slug: row.campusSlug } : null,
     status: row.status,
     organization: organizationFor(row.email),
     lastSeenAt: row.lastSeenAt,

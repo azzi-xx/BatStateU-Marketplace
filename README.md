@@ -1,6 +1,6 @@
 # BatStateU Marketplace
 
-A campus buy-and-sell platform for Batangas State University students — think Facebook Marketplace, but scoped to one campus.
+A campus buy-and-sell platform for Batangas State University students — think Facebook Marketplace, but scoped to the BatStateU community and filterable by campus.
 
 Built as a **strict 3-tier application** for IT 314 (Web Systems and Architecture) and System Integration and Architecture.
 
@@ -80,7 +80,7 @@ npm install
 npm run seed
 ```
 
-This creates `database/marketplace.db` with 1 admin, 28 students, 6 categories, 100 listings (30 curated + 70 generated), 53 orders (40 completed, 7 pending, 6 cancelled), and 60 messages across listing conversations.
+This creates `database/marketplace.db` with 1 admin, 28 students, 6 campuses, 6 categories, 100 listings (30 curated + 70 generated), 53 orders (40 completed, 7 pending, 6 cancelled), and 60 messages across listing conversations. Each student belongs to a campus, and every listing inherits its seller's campus.
 
 **Step 3 — start the server:**
 
@@ -112,24 +112,27 @@ npm run dev
 
 All demo accounts use the password **`password123`**.
 
-| Role | Email |
-| --- | --- |
-| Student | `22-01001@g.batstate-u.edu.ph` |
-| Student | `22-01002@g.batstate-u.edu.ph` |
-| Admin | `admin@g.batstate-u.edu.ph` |
+| Role | Email | Campus |
+| --- | --- | --- |
+| Student | `22-01001@g.batstate-u.edu.ph` | Pablo Borbon |
+| Student | `22-01002@g.batstate-u.edu.ph` | Alangilan |
+| Admin | `admin@g.batstate-u.edu.ph` | — |
+| External demo | `guest.user@gmail.com` | — (Outside org) |
 
-Registration is restricted to `@batstate-u.edu.ph` addresses. To change that, copy `.env.example` to `.env` and edit `ALLOWED_EMAIL_DOMAIN`.
+Registration is restricted to `@g.batstate-u.edu.ph` addresses. To change that, copy `.env.example` to `.env` and edit `ALLOWED_EMAIL_DOMAIN`.
+
+Accounts that do not use the BatStateU student format (for example the seeded `guest.user@gmail.com`) are marked **Outside org** in the UI. Students choose a campus at registration and can change it later from `/account.html`.
 
 ## 5. Pages
 
 | Page | URL | Notes |
 | --- | --- | --- |
-| Marketplace | `/` | Search, category chips, sorting, pagination |
-| Listing detail | `/listing.html?id=1` | Photos, seller card, view counter, owner actions |
+| Marketplace | `/` | Search, category chips, campus chips, sorting, pagination |
+| Listing detail | `/listing.html?id=1` | Photos, campus label, seller card, view counter, owner actions |
 | Log in | `/login.html` | Redirects back to `?next=` after login |
-| Sign up | `/register.html` | School-email validation, bcrypt hashing |
-| Post / edit item | `/sell.html` (`?id=` to edit) | Photo upload, live preview |
-| My listings | `/account.html` | Edit and delete your own items |
+| Sign up | `/register.html` | School-email validation, campus picker, bcrypt hashing |
+| Post / edit item | `/sell.html` (`?id=` to edit) | Photo upload, live preview, campus defaults to the seller's |
+| My listings | `/account.html` | Edit/delete items and change your campus |
 | Purchases & sales | `/orders.html` | Requests you sent, sales waiting for your confirmation |
 | Messages | `/messages.html` | Polled conversations, one thread per listing |
 | Admin dashboard | `/admin/dashboard.html` | KPIs, Chart.js charts, recent orders, top sellers — admins only |
@@ -149,9 +152,11 @@ Owner-only rules are enforced in the **service layer**, not just hidden in the U
 | POST | `/api/auth/login` | — | Start a session |
 | POST | `/api/auth/logout` | — | Destroy the session |
 | GET | `/api/auth/me` | — | Current user or `null` |
+| PATCH | `/api/auth/me` | ✔ | Change your campus `{ campusId }` |
 | POST | `/api/auth/heartbeat` | ✔ | Update `last_seen_at` (feeds "users online") |
 | GET | `/api/categories` | — | List categories |
-| GET | `/api/listings` | — | Browse (`q`, `category`, `sort`, `page`, `limit`, `mine=1`) |
+| GET | `/api/campuses` | — | List BatStateU campuses |
+| GET | `/api/listings` | — | Browse (`q`, `category`, `campus`, `sort`, `page`, `limit`, `mine=1`) |
 | GET | `/api/listings/:id` | — | Detail (increments views; adds `viewerOrder` / `incomingRequest`) |
 | POST | `/api/listings` | ✔ | Create (multipart, optional `image`) |
 | PATCH | `/api/listings/:id` | ✔ owner | Update |
@@ -185,13 +190,15 @@ Error shape is always the same:
 
 ```
 users(id, student_id ✦, full_name, email ✦, password_hash, role, program,
-      year_level, status, last_seen_at, created_at)
+      year_level, campus_id → campuses, status, last_seen_at, created_at)
+
+campuses(id, name ✦, slug ✦)
 
 categories(id, name ✦, slug ✦)
 
-listings(id, seller_id → users, category_id → categories, title, description,
-         price_centavos, item_condition, image_path, status, views,
-         created_at, updated_at)
+listings(id, seller_id → users, category_id → categories, campus_id → campuses,
+         title, description, price_centavos, item_condition, image_path, status,
+         views, created_at, updated_at)
 
 orders(id, listing_id → listings, buyer_id → users, seller_id → users,
        amount_centavos, status, note, created_at, updated_at, completed_at)
@@ -204,6 +211,7 @@ Design decisions worth mentioning in your defense:
 
 - **Money is stored as integer centavos** (`price_centavos`, `amount_centavos`), not floats — no rounding drift.
 - **The order price is snapshotted** when the request is created. Editing a listing later cannot rewrite order history.
+- **Campus is inherited by default.** A listing stores its own `campus_id`, but the post form pre-fills the seller's campus, so most items naturally carry the right location. The marketplace filters on `campuses.slug` through a join.
 - **Soft delete** (`status = 'removed'`) keeps the listing row so order and message history stays intact.
 - **One pending request per listing** is enforced by a unique partial index, not only by application code:
   `CREATE UNIQUE INDEX ... ON orders (listing_id) WHERE status = 'pending'`.
@@ -212,7 +220,7 @@ Design decisions worth mentioning in your defense:
 - **Dashboard numbers are aggregated in SQL** (`GROUP BY`, conditional `SUM`); the browser only draws them with Chart.js.
 - **CHECK constraints** on `role`, `status`, `item_condition`, and non-negative prices.
 - **Foreign keys are on** (`PRAGMA foreign_keys = ON`) with `ON DELETE CASCADE`.
-- Indexes on `status`, `category_id`, `seller_id`, `created_at`, and the order/message foreign keys back the browse, dashboard, and inbox queries.
+- Indexes on `status`, `category_id`, `campus_id`, `seller_id`, `created_at`, and the order/message foreign keys back the browse, dashboard, and inbox queries.
 
 ## 8. Security notes
 
@@ -248,6 +256,7 @@ IT 314/
 │   └── marketplace.db         # generated, gitignored
 ├── models/                    # TIER 3 — all SQL
 │   ├── user.model.js
+│   ├── campus.model.js
 │   ├── category.model.js
 │   ├── listing.model.js
 │   ├── order.model.js          # transactions for reserve / complete / cancel
@@ -270,6 +279,7 @@ IT 314/
 │   ├── auth.routes.js
 │   ├── listing.routes.js
 │   ├── category.routes.js
+│   ├── campuses.routes.js
 │   ├── order.routes.js
 │   ├── message.routes.js
 │   └── admin.routes.js
@@ -300,7 +310,7 @@ IT 314/
     └── uploads/               # listing photos (gitignored)
 ```
 
-## 11. Troubleshooting
+## 10. Troubleshooting
 
 **`npm install` fails on better-sqlite3**
 It normally installs a prebuilt binary. If it tries to compile, install the "Desktop development with C++" workload from Visual Studio Build Tools, or use Node LTS (20/22).
@@ -315,7 +325,7 @@ $env:PORT=3001; npm start
 ```powershell
 npm run seed
 ```
-This wipes `messages`, `orders`, `listings`, `categories`, and `users` (in that order, because of foreign keys) and re-inserts the demo data.
+This wipes `messages`, `orders`, `listings`, `categories`, `users`, and `campuses` (in that order, because of foreign keys) and re-inserts the demo data.
 
 **The site loads but there are no listings**
 The server started before seeding. Run `npm run seed`, then restart `npm start`.

@@ -12,12 +12,14 @@
   const state = {
     q: (params.get('q') || '').slice(0, 80),
     category: params.get('category') || '',
+    campus: params.get('campus') || '',
     sort: SORTS.includes(params.get('sort')) ? params.get('sort') : 'newest',
     page: Math.max(1, Number.parseInt(params.get('page') || '1', 10) || 1),
   };
 
   const els = {
     chips: document.getElementById('categoryChips'),
+    campusChips: document.getElementById('campusChips'),
     sort: document.getElementById('sortSelect'),
     count: document.getElementById('resultCount'),
     pagination: document.getElementById('pagination'),
@@ -27,6 +29,7 @@
   };
 
   let categories = [];
+  let campuses = [];
   let requestSeq = 0;
 
   els.searchInput.value = state.q;
@@ -39,6 +42,7 @@
     url.search = '';
     if (state.q) url.searchParams.set('q', state.q);
     if (state.category) url.searchParams.set('category', state.category);
+    if (state.campus) url.searchParams.set('campus', state.campus);
     if (state.sort !== 'newest') url.searchParams.set('sort', state.sort);
     if (state.page > 1) url.searchParams.set('page', String(state.page));
     window.history.replaceState({}, '', url);
@@ -76,9 +80,11 @@
       reset.addEventListener('click', () => {
         state.q = '';
         state.category = '';
+        state.campus = '';
         state.page = 1;
         els.searchInput.value = '';
         renderChips();
+        renderCampusChips();
         load();
       });
     }
@@ -90,11 +96,16 @@
         ? ''
         : `<span class="badge badge--${listing.status}">${statusLabel(listing.status)}</span>`;
 
+    const campusBadge = listing.campus
+      ? `<span class="campus-badge">📍 ${escapeHtml(listing.campus.name)}</span>`
+      : '';
+
     return `
       <article class="card">
         <a class="card__media" href="/listing.html?id=${listing.id}" aria-label="${escapeHtml(listing.title)}">
           ${mediaInner(listing)}
           ${badge}
+          ${campusBadge}
         </a>
         <div class="card__body">
           <p class="card__price">${peso(listing.price)}</p>
@@ -170,6 +181,27 @@
     });
   }
 
+  function renderCampusChips() {
+    const items = [{ slug: '', name: 'All campuses' }, ...campuses];
+
+    els.campusChips.innerHTML = items
+      .map(
+        (campus) => `
+        <button class="chip chip--campus${state.campus === campus.slug ? ' is-active' : ''}" type="button"
+                data-campus="${escapeHtml(campus.slug)}">${escapeHtml(campus.name)}</button>`
+      )
+      .join('');
+
+    els.campusChips.querySelectorAll('[data-campus]').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        state.campus = chip.dataset.campus;
+        state.page = 1;
+        renderCampusChips();
+        load();
+      });
+    });
+  }
+
   /* ---------------------------------------------------------------- load -- */
 
   async function load() {
@@ -180,6 +212,7 @@
     const query = new URLSearchParams({ page: String(state.page), limit: '12', sort: state.sort });
     if (state.q) query.set('q', state.q);
     if (state.category) query.set('category', state.category);
+    if (state.campus) query.set('campus', state.campus);
 
     try {
       const payload = await API.get(`/api/listings?${query.toString()}`);
@@ -201,7 +234,7 @@
       }
 
       if (els.stats) {
-        els.stats.innerHTML = `<strong>${pagination.total}</strong> listing${pagination.total === 1 ? '' : 's'} live on campus`;
+        els.stats.innerHTML = `<strong>${pagination.total}</strong> listing${pagination.total === 1 ? '' : 's'} live across BatStateU campuses`;
       }
     } catch (error) {
       if (seq !== requestSeq) return;
@@ -226,12 +259,18 @@
 
   (async () => {
     try {
-      const payload = await API.get('/api/categories');
-      categories = payload.data;
+      const [categoryPayload, campusPayload] = await Promise.all([
+        API.get('/api/categories'),
+        API.get('/api/campuses'),
+      ]);
+      categories = categoryPayload.data;
+      campuses = campusPayload.data;
     } catch {
       categories = [];
+      campuses = [];
     }
     renderChips();
+    renderCampusChips();
     load();
   })();
 })();

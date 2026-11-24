@@ -15,6 +15,7 @@
     subheading: document.getElementById('formSubheading'),
     title: document.getElementById('title'),
     category: document.getElementById('categoryId'),
+    campus: document.getElementById('campusId'),
     price: document.getElementById('price'),
     condition: document.getElementById('condition'),
     description: document.getElementById('description'),
@@ -116,14 +117,27 @@
   });
 
   try {
-    const categoriesPayload = await API.get('/api/categories');
+    const [categoriesPayload, campusesPayload] = await Promise.all([
+      API.get('/api/categories'),
+      API.get('/api/campuses'),
+    ]);
+
     els.category.innerHTML =
       '<option value="">Select a category</option>' +
       categoriesPayload.data
         .map((category) => `<option value="${category.id}">${escapeHtml(category.name)}</option>`)
         .join('');
+
+    els.campus.innerHTML =
+      '<option value="">Select campus</option>' +
+      campusesPayload.data
+        .map((campus) => `<option value="${campus.id}">${escapeHtml(campus.name)}</option>`)
+        .join('');
+
+    // New listings default to the seller's campus; they can still change it.
+    if (user.campus) els.campus.value = String(user.campus.id);
   } catch (error) {
-    showBanner('Could not load categories. ' + error.message);
+    showBanner('Could not load categories or campuses. ' + error.message);
     return;
   }
 
@@ -145,6 +159,7 @@
 
       els.title.value = listing.title;
       els.category.value = String(listing.category.id);
+      if (listing.campus) els.campus.value = String(listing.campus.id);
       els.price.value = String(listing.price);
       els.condition.value = listing.condition;
       els.description.value = listing.description || '';
@@ -174,6 +189,7 @@
     const title = els.title.value.trim();
     const price = els.price.value.trim();
     const categoryId = els.category.value;
+    const campusId = els.campus.value;
     const condition = els.condition.value;
 
     let valid = true;
@@ -190,6 +206,10 @@
       setError('categoryId', 'Choose a category.');
       valid = false;
     }
+    if (!campusId) {
+      setError('campusId', 'Choose the item campus.');
+      valid = false;
+    }
     if (!condition) {
       setError('condition', 'Choose the item condition.');
       valid = false;
@@ -200,6 +220,7 @@
     data.append('title', title);
     data.append('price', price);
     data.append('categoryId', categoryId);
+    data.append('campusId', campusId);
     data.append('condition', condition);
     data.append('description', els.description.value.trim());
     if (selectedFile) data.append('image', selectedFile);

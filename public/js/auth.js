@@ -81,6 +81,19 @@
   /* ------------------------------------------------------------ register -- */
 
   if (registerForm) {
+    const campusSelect = registerForm.querySelector('#campusId');
+
+    // Campuses are served by the API so the list has one source of truth.
+    API.get('/api/campuses')
+      .then((payload) => {
+        campusSelect.innerHTML =
+          '<option value="">Select campus</option>' +
+          payload.data
+            .map((campus) => `<option value="${campus.id}">${escapeHtml(campus.name)}</option>`)
+            .join('');
+      })
+      .catch((error) => showBanner(registerForm, 'Could not load campuses. ' + error.message));
+
     registerForm.addEventListener('submit', async (event) => {
       event.preventDefault();
       clearErrors(registerForm);
@@ -92,6 +105,7 @@
         email: form.email.value.trim(),
         program: form.program.value.trim(),
         yearLevel: form.yearLevel.value,
+        campusId: form.campusId.value,
         password: form.password.value,
       };
       const confirm = form.confirmPassword.value;
@@ -110,8 +124,12 @@
       if (!values.email) {
         setError(form, 'email', 'Email is required.');
         valid = false;
-      } else if (!values.email.toLowerCase().endsWith('@' + (form.dataset.domain || 'batstate-u.edu.ph'))) {
-        setError(form, 'email', `Use your @${form.dataset.domain || 'batstate-u.edu.ph'} email.`);
+      } else if (!values.email.toLowerCase().endsWith('@' + (form.dataset.domain || 'g.batstate-u.edu.ph'))) {
+        setError(form, 'email', `Use your @${form.dataset.domain || 'g.batstate-u.edu.ph'} email.`);
+        valid = false;
+      }
+      if (!values.campusId) {
+        setError(form, 'campusId', 'Choose your campus.');
         valid = false;
       }
       if (values.password.length < 8) {

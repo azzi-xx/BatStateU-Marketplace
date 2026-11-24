@@ -35,7 +35,8 @@
         <p>Create your student account and start listing items in under a minute.</p>
 
         <div class="auth__features">
-          <div class="auth__feature"><i>🔒</i><span>Only @batstate-u.edu.ph accounts can register</span></div>
+          <div class="auth__feature"><i>🔒</i><span>Only @g.batstate-u.edu.ph accounts can register</span></div>
+          <div class="auth__feature"><i>🏫</i><span>Pick your BatStateU campus and filter listings by it</span></div>
           <div class="auth__feature"><i>🏷️</i><span>Post unlimited listings with photos and prices</span></div>
           <div class="auth__feature"><i>📈</i><span>Track your views and manage your items in one place</span></div>
         </div>
@@ -48,7 +49,7 @@
 
           <div class="alert alert--error" data-banner hidden></div>
 
-          <form class="form" id="registerForm" data-domain="batstate-u.edu.ph" novalidate>
+          <form class="form" id="registerForm" data-domain="g.batstate-u.edu.ph" novalidate>
             <div class="form-row">
               <div class="field">
                 <label for="fullName">Full name</label>
@@ -70,29 +71,37 @@
                 name="email"
                 type="email"
                 autocomplete="email"
-                placeholder="juan.delacruz@batstate-u.edu.ph"
+                placeholder="22-01234@g.batstate-u.edu.ph"
                 required
               />
               <p class="field__error" data-error="email"></p>
             </div>
 
+            <div class="field">
+              <label for="program">Program</label>
+              <input id="program" name="program" type="text" list="programs" placeholder="BS Information Technology" />
+              <datalist id="programs">
+                <option value="BS Information Technology"></option>
+                <option value="BS Computer Science"></option>
+                <option value="BS Civil Engineering"></option>
+                <option value="BS Electrical Engineering"></option>
+                <option value="BS Mechanical Engineering"></option>
+                <option value="BS Nursing"></option>
+                <option value="BS Education"></option>
+                <option value="BS Business Administration"></option>
+                <option value="BS Accountancy"></option>
+                <option value="BS Psychology"></option>
+              </datalist>
+              <p class="field__error" data-error="program"></p>
+            </div>
+
             <div class="form-row">
               <div class="field">
-                <label for="program">Program</label>
-                <input id="program" name="program" type="text" list="programs" placeholder="BS Information Technology" />
-                <datalist id="programs">
-                  <option value="BS Information Technology"></option>
-                  <option value="BS Computer Science"></option>
-                  <option value="BS Civil Engineering"></option>
-                  <option value="BS Electrical Engineering"></option>
-                  <option value="BS Mechanical Engineering"></option>
-                  <option value="BS Nursing"></option>
-                  <option value="BS Education"></option>
-                  <option value="BS Business Administration"></option>
-                  <option value="BS Accountancy"></option>
-                  <option value="BS Psychology"></option>
-                </datalist>
-                <p class="field__error" data-error="program"></p>
+                <label for="campusId">Campus</label>
+                <select id="campusId" name="campusId" required>
+                  <option value="">Select campus</option>
+                </select>
+                <p class="field__error" data-error="campusId"></p>
               </div>
 
               <div class="field">

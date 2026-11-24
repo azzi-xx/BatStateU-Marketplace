@@ -11,6 +11,9 @@ function attachUser(req, _res, next) {
   if (userId) {
     const user = userModel.findPublicById(userId);
     if (user && user.status === 'active') {
+      user.campus = user.campusId
+        ? { id: user.campusId, name: user.campusName, slug: user.campusSlug }
+        : null;
       user.organization = String(user.email || '').toLowerCase().endsWith('@g.batstate-u.edu.ph')
         ? 'internal'
         : 'external';

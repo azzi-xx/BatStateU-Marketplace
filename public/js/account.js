@@ -16,17 +16,76 @@
   const metaSlot = document.getElementById('accountMeta');
   const countSlot = document.getElementById('listingCount');
 
-  if (nameSlot) nameSlot.textContent = user.fullName;
-  if (metaSlot) {
-    const parts = [user.program, user.yearLevel ? `Year ${user.yearLevel}` : null, user.studentId]
+  function renderMeta() {
+    const parts = [
+      user.program,
+      user.yearLevel ? `Year ${user.yearLevel}` : null,
+      user.campus ? user.campus.name : null,
+      user.studentId,
+    ]
       .filter(Boolean)
       .join(' · ');
+    if (!metaSlot) return;
     metaSlot.innerHTML = `${escapeHtml(parts || user.email)}${
       user.organization === 'external'
         ? ' · <span class="pill pill--external">Outside organization</span>'
         : ''
     }`;
   }
+
+  if (nameSlot) nameSlot.textContent = user.fullName;
+  renderMeta();
+
+  /* -------------------------------------------------------------- campus -- */
+
+  const campusCard = document.getElementById('campusCard');
+  const campusForm = document.getElementById('campusForm');
+  const campusSelect = document.getElementById('campusSelect');
+
+  async function initCampus() {
+    if (!campusCard || !campusForm || !campusSelect || user.role === 'admin') return;
+
+    try {
+      const payload = await API.get('/api/campuses');
+      campusSelect.innerHTML =
+        '<option value="">Select campus</option>' +
+        payload.data
+          .map((campus) => `<option value="${campus.id}">${escapeHtml(campus.name)}</option>`)
+          .join('');
+      if (user.campus) campusSelect.value = String(user.campus.id);
+      campusCard.hidden = false;
+    } catch {
+      /* The listing page still works without the campus editor. */
+    }
+  }
+
+  campusForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const button = campusForm.querySelector('button[type="submit"]');
+    if (!campusSelect.value) {
+      App.toast('Choose your campus first.', 'error');
+      return;
+    }
+
+    button.disabled = true;
+    const label = button.textContent;
+    button.textContent = 'Saving…';
+
+    try {
+      const payload = await API.patch('/api/auth/me', { campusId: Number(campusSelect.value) });
+      user.campus = payload.user.campus;
+      renderMeta();
+      App.toast('Campus updated. New listings will use it by default.');
+    } catch (error) {
+      App.toast(error.message, 'error');
+    } finally {
+      button.disabled = false;
+      button.textContent = label;
+    }
+  });
+
+  initCampus();
 
   function row(listing) {
     return `

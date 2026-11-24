@@ -42,6 +42,20 @@
         </div>
       </div>
 
+      <section class="campus-card" id="campusCard" hidden>
+        <div>
+          <h2>Your campus</h2>
+          <p>New listings use this campus by default. Change it if you transfer or sell for another campus.</p>
+        </div>
+        <form class="campus-form" id="campusForm">
+          <label class="visually-hidden" for="campusSelect">Campus</label>
+          <select id="campusSelect" required>
+            <option value="">Select campus</option>
+          </select>
+          <button class="btn btn--primary btn--sm" type="submit">Save</button>
+        </form>
+      </section>
+
       <div class="rows" id="myListings" style="padding-bottom: 72px">
         <div class="skeleton-card" style="padding: 14px">
           <div class="skeleton skeleton--line short"></div>

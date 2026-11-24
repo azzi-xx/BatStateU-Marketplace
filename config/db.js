@@ -78,6 +78,27 @@ db.prepare = function prepareWithLogging(sql) {
 function applySchema() {
   const schema = fs.readFileSync(path.join(__dirname, '..', 'database', 'schema.sql'), 'utf8');
   db.exec(schema);
+  migrate();
+}
+
+/**
+ * Small additive migrations for databases created before campuses existed.
+ * `CREATE TABLE IF NOT EXISTS` leaves an existing table untouched, so new
+ * columns have to be added explicitly. Existing rows keep `NULL` until they are
+ * reseeded or the user picks a campus from their account page.
+ */
+function migrate() {
+  const hasColumn = (table, column) =>
+    db.prepare(`PRAGMA table_info(${table})`).all().some((entry) => entry.name === column);
+
+  if (!hasColumn('users', 'campus_id')) {
+    db.exec('ALTER TABLE users ADD COLUMN campus_id INTEGER REFERENCES campuses(id)');
+  }
+  if (!hasColumn('listings', 'campus_id')) {
+    db.exec('ALTER TABLE listings ADD COLUMN campus_id INTEGER REFERENCES campuses(id)');
+  }
+
+  db.exec('CREATE INDEX IF NOT EXISTS idx_listings_campus ON listings (campus_id)');
 }
 
 /** True when the database has no users yet (i.e. `npm run seed` was never run). */

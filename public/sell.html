@@ -83,17 +83,31 @@
                 </div>
               </div>
 
-              <div class="field">
-                <label for="condition">Condition</label>
-                <select id="condition" name="condition" required>
-                  <option value="">Select condition</option>
-                  <option value="new">Brand new</option>
-                  <option value="like_new">Like new</option>
-                  <option value="used">Used</option>
-                  <option value="for_parts">For parts / not working</option>
-                </select>
-                <p class="field__error" data-error="condition"></p>
+              <div class="form-row">
+                <div class="field">
+                  <label for="campusId">Campus</label>
+                  <select id="campusId" name="campusId" required>
+                    <option value="">Select campus</option>
+                  </select>
+                  <p class="field__error" data-error="campusId"></p>
+                </div>
+
+                <div class="field">
+                  <label for="condition">Condition</label>
+                  <select id="condition" name="condition" required>
+                    <option value="">Select condition</option>
+                    <option value="new">Brand new</option>
+                    <option value="like_new">Like new</option>
+                    <option value="used">Used</option>
+                    <option value="for_parts">For parts / not working</option>
+                  </select>
+                  <p class="field__error" data-error="condition"></p>
+                </div>
               </div>
+
+              <p class="hint" style="margin-top: -4px; font-size: 12px; color: #9ca3af">
+                Your campus is filled in by default. Change it if the item is available at another campus.
+              </p>
 
               <div class="field">
                 <label for="description">Description</label>
@@ -111,7 +125,7 @@
           <div class="form-actions">
             <button class="btn btn--primary" id="submitBtn" type="submit">Post item</button>
             <a class="btn btn--ghost" id="cancelBtn" href="/">Cancel</a>
-            <span class="muted">Visible to all BatStateU students.</span>
+            <span class="muted">Visible to students across all BatStateU campuses.</span>
           </div>
         </form>
       </div>
