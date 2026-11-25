@@ -22,7 +22,7 @@
 
   function renderKpis(k) {
     document.getElementById('kpiGrid').innerHTML = [
-      kpiCard('Revenue', peso(k.revenue), `${peso(k.revenue30d)} in the last 30 days`),
+      kpiCard('Transaction Amount', peso(k.revenue), `${peso(k.revenue30d)} in the last 30 days`),
       kpiCard('Orders', String(k.orders.total), `${k.orders.pending} pending · ${k.orders.completed} completed`),
       kpiCard('Listings', String(k.listings.total), `${k.listings.available} available · ${k.listings.sold} sold`),
       kpiCard('Students & admins', String(k.users.total), `${k.users.online} online · ${k.users.students} students`),
@@ -70,7 +70,7 @@
 
     slot.innerHTML = `
       <table class="data-table">
-        <thead><tr><th>#</th><th>Seller</th><th class="num">Sales</th><th class="num">Revenue</th></tr></thead>
+        <thead><tr><th>#</th><th>Seller</th><th class="num">Sales</th><th class="num">Transaction Amount</th></tr></thead>
         <tbody>
           ${sellers
             .map(
@@ -154,7 +154,7 @@
         labels: data.labels,
         datasets: [
           {
-            label: 'Revenue',
+            label: 'Transaction Amount',
             data: data.revenue,
             backgroundColor: 'rgba(181, 18, 27, 0.72)',
             borderRadius: 5,
