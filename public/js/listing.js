@@ -67,6 +67,133 @@
       </div>`;
   }
 
+  function campusMapSection(item) {
+    if (!item.campus) return '';
+
+    const { latitude, longitude } = item.campus;
+    const hasCoordinates = Number.isFinite(latitude) && Number.isFinite(longitude);
+    const osmHref = hasCoordinates
+      ? `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=16/${latitude}/${longitude}`
+      : 'https://www.openstreetmap.org/';
+
+    return `
+      <section class="campus-map-card" aria-labelledby="campusMapTitle">
+        <div class="campus-map-card__head">
+          <h2 id="campusMapTitle">Campus location</h2>
+          <span class="campus-map-card__badge">OpenStreetMap</span>
+        </div>
+        <div class="campus-map" id="campusMap" aria-label="Map showing ${escapeHtml(
+          item.campus.name
+        )} campus"></div>
+        <div class="campus-map-card__foot">
+          <p class="campus-map-card__address" id="campusMapAddress">${escapeHtml(
+            item.campus.name
+          )} Campus · Batangas State University</p>
+          <a class="campus-map-card__link" id="campusMapLink" href="${osmHref}"
+             target="_blank" rel="noopener">Open in OpenStreetMap ↗</a>
+        </div>
+        <p class="campus-map-card__credit">Map data &copy; OpenStreetMap contributors</p>
+      </section>`;
+  }
+
+  function initCampusMap(item) {
+    const container = document.getElementById('campusMap');
+    if (!container || !item.campus) return;
+
+    const { latitude, longitude } = item.campus;
+
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      container.innerHTML =
+        '<p class="campus-map__fallback">Map coordinates are not available for this campus yet.</p>';
+      return;
+    }
+
+    if (!window.L) {
+      container.innerHTML =
+        '<p class="campus-map__fallback">The map library could not load. Use the OpenStreetMap link below.</p>';
+      return;
+    }
+
+    // Tile endpoints come from the server, so changing one config value covers
+    // every listing page. The defaults keep the map working if the API is down.
+    const config = Object.assign(
+      {
+        tileUrl: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        fallbackTileUrl: 'https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+        fallbackAttribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        zoom: 16,
+      },
+      item.map || {}
+    );
+
+    const map = L.map(container, { scrollWheelZoom: false }).setView(
+      [latitude, longitude],
+      config.zoom
+    );
+
+    let tiles = L.tileLayer(config.tileUrl, {
+      maxZoom: 19,
+      attribution: config.attribution,
+    }).addTo(map);
+
+    // Some networks get a 403 from the OpenStreetMap tile server. After a few
+    // failed tiles, quietly switch to CARTO's OpenStreetMap-based basemap.
+    let tileErrors = 0;
+    let usingFallback = false;
+
+    function useFallbackTiles() {
+      if (usingFallback) return;
+      usingFallback = true;
+
+      map.removeLayer(tiles);
+      tiles = L.tileLayer(config.fallbackTileUrl, {
+        maxZoom: 19,
+        attribution: config.fallbackAttribution,
+      }).addTo(map);
+
+      const badge = document.querySelector('.campus-map-card__badge');
+      if (badge) badge.textContent = 'OpenStreetMap · CARTO';
+
+      const credit = document.querySelector('.campus-map-card__credit');
+      if (credit) credit.textContent = 'Map data © OpenStreetMap contributors · © CARTO';
+    }
+
+    tiles.on('tileerror', () => {
+      tileErrors += 1;
+      if (tileErrors >= 3) useFallbackTiles();
+    });
+
+    L.marker([latitude, longitude])
+      .addTo(map)
+      .bindPopup(
+        `<strong>${escapeHtml(item.campus.name)} Campus</strong><br>BatStateU Marketplace pickup area`
+      )
+      .openPopup();
+
+    // The panel is laid out after the first paint; recompute the map size.
+    window.setTimeout(() => map.invalidateSize(), 200);
+
+    // Ask our API for the cached, reverse-geocoded address. On the first view
+    // this triggers the external Nominatim call; afterwards it comes from SQLite.
+    API.get(`/api/campuses/${item.campus.id}/map`)
+      .then((payload) => {
+        const data = payload && payload.data;
+        if (!data) return;
+
+        const address = document.getElementById('campusMapAddress');
+        if (address && data.address) address.textContent = data.address;
+
+        const link = document.getElementById('campusMapLink');
+        if (link && data.map && data.map.osmUrl) link.href = data.map.osmUrl;
+      })
+      .catch(() => {
+        /* The map itself already works; the address is a progressive enhancement. */
+      });
+  }
+
   function render(item) {
     document.title = `${item.title} · BatStateU Marketplace`;
 
@@ -138,9 +265,12 @@
           <h2>Description</h2>
           <p>${item.description ? escapeHtml(item.description) : 'The seller did not add a description.'}</p>
         </div>
+
+        ${campusMapSection(item)}
       </div>`;
 
     wireActions();
+    initCampusMap(item);
   }
 
   function wireActions() {

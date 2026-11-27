@@ -98,6 +98,20 @@ function migrate() {
     db.exec('ALTER TABLE listings ADD COLUMN campus_id INTEGER REFERENCES campuses(id)');
   }
 
+  // Map integration columns (coordinates + cached reverse-geocoded address).
+  if (!hasColumn('campuses', 'latitude')) {
+    db.exec('ALTER TABLE campuses ADD COLUMN latitude REAL');
+  }
+  if (!hasColumn('campuses', 'longitude')) {
+    db.exec('ALTER TABLE campuses ADD COLUMN longitude REAL');
+  }
+  if (!hasColumn('campuses', 'map_address')) {
+    db.exec('ALTER TABLE campuses ADD COLUMN map_address TEXT');
+  }
+  if (!hasColumn('campuses', 'map_checked_at')) {
+    db.exec('ALTER TABLE campuses ADD COLUMN map_checked_at TEXT');
+  }
+
   db.exec('CREATE INDEX IF NOT EXISTS idx_listings_campus ON listings (campus_id)');
 }
 

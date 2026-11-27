@@ -1,10 +1,10 @@
 const express = require('express');
-const campusModel = require('../models/campus.model');
+const asyncHandler = require('../utils/asyncHandler');
+const campusController = require('../controllers/campus.controller');
 
 const router = express.Router();
 
-router.get('/', (_req, res) => {
-  res.json({ data: campusModel.all() });
-});
+router.get('/', campusController.list);
+router.get('/:id/map', asyncHandler(campusController.map));
 
 module.exports = router;

@@ -1233,7 +1233,8 @@ select:focus {
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
   grid-template-areas:
     "media panel"
-    "desc  panel";
+    "desc  panel"
+    "map   panel";
   gap: 0 26px;
   padding: 30px 0 64px;
   align-items: start;
@@ -1403,6 +1404,94 @@ select:focus {
   color: var(--ink-soft);
   font-size: 14.5px;
   line-height: 1.7;
+}
+
+/* ---------------------------------------------------- campus map (OSM) -- */
+.campus-map-card {
+  grid-area: map;
+  margin-top: 26px;
+  background: var(--paper-2);
+  border: 3px solid var(--ink);
+  border-left: 7px solid var(--accent);
+  border-radius: 2px;
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.campus-map-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.campus-map-card h2 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+}
+
+.campus-map-card__badge {
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: 2px solid var(--ink);
+  background: var(--gold);
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+.campus-map {
+  height: 250px;
+  border: 2px solid var(--ink);
+  background: #e9e5dc;
+  /* Leaflet's panes use high z-indexes; isolate them inside this card. */
+  isolation: isolate;
+  z-index: 0;
+}
+
+.campus-map__fallback {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 24px;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.campus-map-card__foot {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.campus-map-card__address {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+.campus-map-card__link {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+}
+
+.campus-map-card__credit {
+  margin-top: 8px;
+  font-size: 10.5px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .meta-list {
@@ -1718,7 +1807,8 @@ select:focus {
     grid-template-areas:
       "media"
       "panel"
-      "desc";
+      "desc"
+      "map";
   }
 
   .detail__panel {
@@ -1809,8 +1899,18 @@ select:focus {
 
   .detail__panel,
   .description,
+  .campus-map-card,
   .form-card {
     padding: 18px;
+  }
+
+  .campus-map {
+    height: 200px;
+  }
+
+  .campus-map-card__foot {
+    flex-direction: column;
+    gap: 6px;
   }
 
   .form-row {

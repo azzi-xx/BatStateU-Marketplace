@@ -16,6 +16,7 @@ The flow is intentionally two-sided: a buyer **requests** an item, the seller **
 | Application logic (tier 2) | Node.js, Express 5, express-session, bcryptjs, multer |
 | Data (tier 3) | SQLite via `better-sqlite3` |
 | Charts | Chart.js (admin dashboard) |
+| Campus map | Leaflet + OpenStreetMap tiles; Nominatim geocoding API |
 
 ## 2. Three-tier architecture
 
@@ -52,6 +53,41 @@ The flow is intentionally two-sided: a buyer **requests** an item, the seller **
 | `config/db.js` | 3 | Opens the database, applies the schema |
 | `database/` | 3 | `schema.sql`, `seed.js`, `marketplace.db` |
 
+### Integration points
+
+The system is not just one stack talking to itself. It coordinates several
+separate components and external services, and both external integrations are
+visible in the running app:
+
+| Integration | Direction | Code |
+| --- | --- | --- |
+| SQLite database | app ↔ data file | `models/`, `config/db.js` |
+| OpenStreetMap **Nominatim** geocoder | server → external API | `config/geocoder.js`, `services/map.service.js` |
+| OpenStreetMap **tiles** + Leaflet | browser → external map service | `public/vendor/leaflet/`, `public/js/listing.js` |
+
+**Campus map data flow**
+
+1. `GET /api/listings/:id` returns the listing's campus coordinates **and tile
+   settings** from the app tier.
+2. The browser draws a Leaflet map and requests map tiles from OpenStreetMap.
+3. If three tiles fail (for example a 403 from OSM), the browser switches to
+   CARTO's OpenStreetMap-based backup tiles without a page reload.
+4. The browser also calls `GET /api/campuses/:id/map`.
+5. On the first view, the service reverse-geocodes the coordinates through
+   Nominatim and caches the display address in `campuses.map_address`.
+6. Later views return the cached address (`sources.address: "cache"`) without
+   calling the provider again.
+
+No API key is required. The map degrades gracefully: if Nominatim is
+unreachable, the address falls back to the campus name; if OpenStreetMap tiles
+are blocked, CARTO tiles take over. Tiles still need internet access. The
+server sends `Referrer-Policy: strict-origin-when-cross-origin` so the browser
+can identify the app to external tile providers.
+
+**Demo tip:** open any listing, scroll to **Campus location**, then open the
+browser Network panel to show the tile requests and the `/api/campuses/:id/map`
+call. Reload the page and point out that the second map response is a cache hit.
+
 ## 3. Requirements
 
 - **Node.js 18 or newer** (built and tested on Node 24)
@@ -80,7 +116,7 @@ npm install
 npm run seed
 ```
 
-This creates `database/marketplace.db` with 1 admin, 28 students, 6 campuses, 6 categories, 100 listings (30 curated + 70 generated), 53 orders (40 completed, 7 pending, 6 cancelled), and 60 messages across listing conversations. Each student belongs to a campus, and every listing inherits its seller's campus.
+This creates `database/marketplace.db` with 1 admin, 28 students, 5 campuses, 6 categories, 100 listings (30 curated + 70 generated), 53 orders (40 completed, 7 pending, 6 cancelled), and 60 messages across listing conversations. Each student belongs to a campus, and every listing inherits its seller's campus.
 
 **Step 3 — start the server:**
 
@@ -128,7 +164,7 @@ Accounts that do not use the BatStateU student format (for example the seeded `g
 | Page | URL | Notes |
 | --- | --- | --- |
 | Marketplace | `/` | Search, category chips, campus chips, sorting, pagination; hero shows a randomly picked BSU campus photo |
-| Listing detail | `/listing.html?id=1` | Photos, campus label, seller card, view counter, owner actions |
+| Listing detail | `/listing.html?id=1` | Photos, campus label, seller card, view counter, owner actions, and an OpenStreetMap view of the item's campus |
 | Log in | `/login.html` | Redirects back to `?next=` after login |
 | Sign up | `/register.html` | School-email validation, campus picker, bcrypt hashing |
 | Post / edit item | `/sell.html` (`?id=` to edit) | Photo upload, live preview, campus defaults to the seller's |
@@ -155,9 +191,10 @@ Owner-only rules are enforced in the **service layer**, not just hidden in the U
 | PATCH | `/api/auth/me` | ✔ | Change your campus `{ campusId }` |
 | POST | `/api/auth/heartbeat` | ✔ | Update `last_seen_at` (feeds "users online") |
 | GET | `/api/categories` | — | List categories |
-| GET | `/api/campuses` | — | List BatStateU campuses |
+| GET | `/api/campuses` | — | List BatStateU campuses (with map coordinates) |
+| GET | `/api/campuses/:id/map` | — | Campus map payload: coordinates, cached address, tile config + backup, OSM link |
 | GET | `/api/listings` | — | Browse (`q`, `category`, `campus`, `sort`, `page`, `limit`, `mine=1`) |
-| GET | `/api/listings/:id` | — | Detail (increments views; adds `viewerOrder` / `incomingRequest`) |
+| GET | `/api/listings/:id` | — | Detail (increments views; adds `viewerOrder`, `incomingRequest`, and map tile config) |
 | POST | `/api/listings` | ✔ | Create (multipart, optional `image`) |
 | PATCH | `/api/listings/:id` | ✔ owner | Update |
 | DELETE | `/api/listings/:id` | ✔ owner | Soft delete (`status = 'removed'`) |
@@ -192,7 +229,7 @@ Error shape is always the same:
 users(id, student_id ✦, full_name, email ✦, password_hash, role, program,
       year_level, campus_id → campuses, status, last_seen_at, created_at)
 
-campuses(id, name ✦, slug ✦)
+campuses(id, name ✦, slug ✦, latitude, longitude, map_address, map_checked_at)
 
 categories(id, name ✦, slug ✦)
 
@@ -218,6 +255,7 @@ Design decisions worth mentioning in your defense:
 - **Status transitions are transactional** (`better-sqlite3` `db.transaction`): a completed order and its sold listing are written together, or neither is.
 - **Messaging is threaded by listing**: a thread is `(listing, buyer, seller)`, so there is always an item being discussed.
 - **Dashboard numbers are aggregated in SQL** (`GROUP BY`, conditional `SUM`); the browser only draws them with Chart.js.
+- **Campus coordinates are data, not hardcoded UI.** They live in `campuses` so the map, the filter, and the listing share one source of truth. The reverse-geocoded address is cached in the same row, which keeps the external API call to once per campus per day.
 - **CHECK constraints** on `role`, `status`, `item_condition`, and non-negative prices.
 - **Foreign keys are on** (`PRAGMA foreign_keys = ON`) with `ON DELETE CASCADE`.
 - Indexes on `status`, `category_id`, `campus_id`, `seller_id`, `created_at`, and the order/message foreign keys back the browse, dashboard, and inbox queries.
@@ -249,7 +287,8 @@ IT 314/
 ├── package.json
 ├── .env.example
 ├── config/
-│   └── db.js                  # opens SQLite, applies schema
+│   ├── db.js                  # opens SQLite, applies schema
+│   └── geocoder.js            # external Nominatim geocoding adapter
 ├── database/
 │   ├── schema.sql             # tables, constraints, indexes
 │   ├── seed.js                # demo data (npm run seed)
@@ -267,13 +306,15 @@ IT 314/
 │   ├── listing.service.js
 │   ├── order.service.js
 │   ├── message.service.js
-│   └── admin.service.js
+│   ├── admin.service.js
+│   └── map.service.js          # campus map + cached geocoding
 ├── controllers/               # TIER 2 — request/response
 │   ├── auth.controller.js
 │   ├── listing.controller.js
 │   ├── order.controller.js
 │   ├── message.controller.js
-│   └── admin.controller.js
+│   ├── admin.controller.js
+│   └── campus.controller.js    # campus list + map payload
 ├── routes/                    # TIER 2 — URL mapping
 │   ├── index.js
 │   ├── auth.routes.js
@@ -304,6 +345,7 @@ IT 314/
     │   ├── orders.html
     │   └── data.html              # tables, SQL stream, row → JSON pipeline
     ├── css/style.css
+    ├── vendor/leaflet/            # vendored Leaflet JS, CSS, marker icons
     ├── js/ api.js  app.js  auth.js  marketplace.js  listing.js  sell.js
     │        account.js  orders.js  messages.js  admin.js
     │        admin-dashboard.js  admin-users.js  admin-listings.js  admin-orders.js  admin-data.js
@@ -332,3 +374,13 @@ The server started before seeding. Run `npm run seed`, then restart `npm start`.
 
 **I was logged out unexpectedly**
 Sessions are stored in memory, so restarting the server ends all sessions. Log in again.
+
+**The campus map is blank or grey / shows "403 Access Blocked"**
+The Leaflet library is vendored locally, but map **tiles** come from external
+providers, so the demo machine needs internet access. OpenStreetMap sometimes
+returns 403 for certain networks or IPs. After three failed tiles the browser
+automatically switches to CARTO's OpenStreetMap-based backup tiles — look for
+`OpenStreetMap · CARTO` in the card badge. If both providers are blocked, check
+the Network tab in DevTools for the failing tile URL. If the address line falls
+back to the campus name, Nominatim was unreachable; the marker and tiles still
+work, and the next successful request caches the real address.

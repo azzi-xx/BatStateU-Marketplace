@@ -33,13 +33,48 @@ const CATEGORIES = [
 /**
  * Batangas State University campuses. Names only, no abbreviations, so the
  * marketplace labels read naturally ("Alangilan", not "BatStateU Alangilan").
+ *
+ * Coordinates are what the campus map integration plots. They were taken from
+ * OpenStreetMap so the Leaflet map opens on the right building.
  */
 const CAMPUSES = [
-  { name: 'Pablo Borbon', slug: 'pablo-borbon' },
-  { name: 'Alangilan', slug: 'alangilan' },
-  { name: 'Lipa', slug: 'lipa' },
-  { name: 'Nasugbu', slug: 'nasugbu' },
-  { name: 'Malvar', slug: 'malvar' },
+  {
+    name: 'Pablo Borbon',
+    slug: 'pablo-borbon',
+    latitude: 13.7544563,
+    longitude: 121.0531305,
+    mapAddress: 'Batangas State University, Rizal Avenue, Cuta, Poblacion, Batangas City, Batangas',
+  },
+  {
+    name: 'Alangilan',
+    slug: 'alangilan',
+    latitude: 13.7842948,
+    longitude: 121.0742800,
+    mapAddress:
+      'Batangas State University Alangilan Campus, Golden Country Village, Alangilan, Batangas City, Batangas',
+  },
+  {
+    name: 'Lipa',
+    slug: 'lipa',
+    latitude: 13.9566583,
+    longitude: 121.1632727,
+    mapAddress:
+      'Batangas State University Claro M. Recto Campus, Arturo Tanco Drive, Marauoy, Lipa, Batangas',
+  },
+  {
+    name: 'Nasugbu',
+    slug: 'nasugbu',
+    latitude: 14.0678402,
+    longitude: 120.6257830,
+    mapAddress: 'Batangas State University Nasugbu Campus, Bucana, Nasugbu, Batangas',
+  },
+  {
+    name: 'Malvar',
+    slug: 'malvar',
+    latitude: 14.0449123,
+    longitude: 121.1563294,
+    mapAddress: 'Batangas State University Malvar Campus, Poblacion, Malvar, Batangas',
+  },
 ];
 
 const USERS = [
@@ -851,7 +886,10 @@ async function seed() {
     VALUES (@studentId, @fullName, @email, @passwordHash, @role, @program, @yearLevel, @campusId, 'active', @lastSeenAt, @createdAt)
   `);
 
-  const insertCampus = db.prepare('INSERT INTO campuses (name, slug) VALUES (@name, @slug)');
+  const insertCampus = db.prepare(`
+    INSERT INTO campuses (name, slug, latitude, longitude, map_address)
+    VALUES (@name, @slug, @latitude, @longitude, @mapAddress)
+  `);
 
   const insertCategory = db.prepare('INSERT INTO categories (name, slug) VALUES (@name, @slug)');
 

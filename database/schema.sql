@@ -10,7 +10,15 @@ PRAGMA foreign_keys = ON;
 CREATE TABLE IF NOT EXISTS campuses (
   id   INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL UNIQUE,
-  slug TEXT NOT NULL UNIQUE
+  slug TEXT NOT NULL UNIQUE,
+  -- Coordinates are seeded so the map works offline; the map service can also
+  -- fill them in through the external geocoder when a campus is missing them.
+  latitude       REAL,
+  longitude      REAL,
+  -- Reverse-geocoded display address, cached so we only call the external
+  -- geocoding API once per campus (refreshed after a day).
+  map_address    TEXT,
+  map_checked_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS users (

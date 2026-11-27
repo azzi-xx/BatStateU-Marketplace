@@ -9,6 +9,7 @@ const listingModel = require('../models/listing.model');
 const categoryModel = require('../models/category.model');
 const campusModel = require('../models/campus.model');
 const orderModel = require('../models/order.model');
+const mapService = require('./map.service');
 
 const CONDITIONS = ['new', 'like_new', 'used', 'for_parts'];
 const MAX_PAGE_SIZE = 48;
@@ -32,7 +33,13 @@ function toApi(row) {
       slug: row.categorySlug,
     },
     campus: row.campusId
-      ? { id: row.campusId, name: row.campusName, slug: row.campusSlug }
+      ? {
+          id: row.campusId,
+          name: row.campusName,
+          slug: row.campusSlug,
+          latitude: row.campusLatitude,
+          longitude: row.campusLongitude,
+        }
       : null,
     seller: {
       id: row.sellerId,
@@ -128,6 +135,7 @@ function getById(id, viewer = null) {
 
   return {
     ...toApi(row),
+    map: mapService.publicConfig(),
     views: row.views + 1,
     isOwner: Boolean(isOwner),
     viewerOrder,
