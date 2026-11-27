@@ -4,7 +4,7 @@ A campus buy-and-sell platform for Batangas State University students — think 
 
 Built as a **strict 3-tier application** for IT 314 (Web Systems and Architecture) and System Integration and Architecture.
 
-The flow is intentionally two-sided: a buyer **requests** an item, the seller **confirms** it, and only then is the listing marked sold. Nothing is instantly "bought", so both students agree before money changes hands.
+The flow is intentionally two-sided: a buyer **requests** an item, the seller **confirms** it, and only then is the listing marked sold. Nothing is instantly "bought", so both students agree before money changes hands. For a physical handover, the seller can also pin a meetup spot on a map and the buyer confirms it.
 
 ---
 
@@ -16,7 +16,8 @@ The flow is intentionally two-sided: a buyer **requests** an item, the seller **
 | Application logic (tier 2) | Node.js, Express 5, express-session, bcryptjs, multer |
 | Data (tier 3) | SQLite via `better-sqlite3` |
 | Charts | Chart.js (admin dashboard) |
-| Campus map | Leaflet + OpenStreetMap tiles; Nominatim geocoding API |
+| Campus map | Leaflet + OpenStreetMap tiles, with CARTO backup tiles; Nominatim geocoding API |
+| External services | Nominatim geocoding, OpenStreetMap/CARTO map tiles — no API keys required |
 
 ## 2. Three-tier architecture
 
@@ -63,7 +64,8 @@ visible in the running app:
 | --- | --- | --- |
 | SQLite database | app ↔ data file | `models/`, `config/db.js` |
 | OpenStreetMap **Nominatim** geocoder | server → external API | `config/geocoder.js`, `services/map.service.js` |
-| OpenStreetMap **tiles** + Leaflet | browser → external map service | `public/vendor/leaflet/`, `public/js/listing.js` |
+| OpenStreetMap **tiles** + Leaflet | browser → external map service | `public/vendor/leaflet/`, `public/js/listing.js`, `public/js/meetup.js` |
+| Map-based meetup agreement | browser ↔ API ↔ SQLite | `public/meetup.html`, `public/js/meetup.js`, `services/order.service.js` |
 
 **Campus map data flow**
 
@@ -87,6 +89,17 @@ can identify the app to external tile providers.
 **Demo tip:** open any listing, scroll to **Campus location**, then open the
 browser Network panel to show the tile requests and the `/api/campuses/:id/map`
 call. Reload the page and point out that the second map response is a cache hit.
+
+**Meetup data flow**
+
+1. The seller opens `/meetup.html?id=<orderId>` and clicks the map to drop a pin.
+2. `POST /api/orders/:id/meetup` stores the coordinates and label in SQLite after
+   the service checks that the caller is the seller and the order is pending.
+3. The buyer opens the same page; the pin is read from the API and drawn on the
+   same external map.
+4. `PATCH /api/orders/:id/meetup` with `confirm` or `reject` sets the agreement
+   state; a rejection lets the seller pin a new spot (revision increments).
+5. Both sides see the result on `/orders.html`.
 
 ## 3. Requirements
 
@@ -116,7 +129,7 @@ npm install
 npm run seed
 ```
 
-This creates `database/marketplace.db` with 1 admin, 28 students, 5 campuses, 6 categories, 100 listings (30 curated + 70 generated), 53 orders (40 completed, 7 pending, 6 cancelled), and 60 messages across listing conversations. Each student belongs to a campus, and every listing inherits its seller's campus.
+This creates `database/marketplace.db` with 1 admin, 28 students, 5 campuses, 6 categories, 100 listings (30 curated + 70 generated), 53 orders (40 completed, 7 pending, 6 cancelled), and 60 messages across listing conversations. Every listing inherits its seller's campus; the external demo account is the only user without one.
 
 **Step 3 — start the server:**
 
@@ -284,6 +297,9 @@ Design decisions worth mentioning in your defense:
 - Suspending a student takes effect on their **next request**: `attachUser` refuses to load a non-active account and clears the session.
 - Admins cannot suspend themselves, and admin accounts are protected from suspension.
 - A buyer cannot buy their own listing, and only the seller can confirm a sale — both rules live in `services/order.service.js`.
+- Meetup changes are role- and state-checked there too: only the seller can pin,
+  only the buyer can confirm/reject, only pending orders can change, and a
+  confirmed pin is locked. Coordinates are range-validated and labels are escaped.
 - The seller can only reply to someone who has already messaged them or placed an order on that listing.
 
 Known limitations for now: sessions live in memory, so restarting the server logs everyone out. There is no CSRF token and no rate limiting yet; those are the remaining production-hardening items.
@@ -361,7 +377,35 @@ IT 314/
     └── uploads/               # listing photos (gitignored)
 ```
 
-## 10. Troubleshooting
+## 10. SIA / Web Systems alignment
+
+This section records how the running system satisfies the joint **Web Systems**
+and **System Integration and Architecture** requirements. The formal SIA
+document, diagrams, Gantt chart, and presentation are separate submission
+artifacts — the implementation below is what those artifacts must describe.
+
+| Requirement | Evidence in this project |
+| --- | --- |
+| Functional website with a clear purpose | Campus marketplace with auth, 100 listings, campus filters, orders, messages, meetups, and admin reporting |
+| Two or more systems/technologies integrated | SQLite, Express REST API, session/bcrypt auth, Nominatim geocoding API, OpenStreetMap/CARTO tiles, Leaflet, Chart.js |
+| Data flows correctly between components | `/api/campuses/:id/map`, `/api/listings/:id`, the meetup endpoints, and the admin data lab show each hop |
+| Architecture is clearly implemented | Strict 3-tier split: `public/`, `routes→controllers→services`, `models/ + config/db.js + database/` |
+| Professional, consistent, user-friendly UI | BSU-red brutalist theme, campus photo hero, responsive layout, one navigation pattern on all pages |
+| Realistic problem + innovative use of integration | Cross-campus student trading with a map-based meetup agreement between seller and buyer |
+| Live demonstration | Campus map, OSM→CARTO fallback, propose→confirm meetup flow, admin SQL/data pipeline |
+
+**On the database:** the SIA brief lists MySQL/MariaDB as examples, not mandates.
+SQLite was chosen because it is embedded, zero-configuration, reproduces the demo
+with one command, and still keeps all SQL inside the data tier. A production
+deployment could swap it for MySQL/PostgreSQL mainly by changing `config/db.js`,
+the `models/` files, and the seed script; the application tier would stay the same.
+
+**Still needed for full submission:** the formal SIA document (Chapters I–IV),
+DFD context and level-1 diagrams, ERD, use-case and other UML diagrams, a Gantt
+chart with SDLC phases and dependencies, resource/cost and training plans, a
+testing plan, a configuration-management/change plan, and the presentation deck.
+
+## 11. Troubleshooting
 
 **`npm install` fails on better-sqlite3**
 It normally installs a prebuilt binary. If it tries to compile, install the "Desktop development with C++" workload from Visual Studio Build Tools, or use Node LTS (20/22).
@@ -393,3 +437,9 @@ automatically switches to CARTO's OpenStreetMap-based backup tiles — look for
 the Network tab in DevTools for the failing tile URL. If the address line falls
 back to the campus name, Nominatim was unreachable; the marker and tiles still
 work, and the next successful request caches the real address.
+
+**The meetup page says "Not arranged" or the pin will not save**
+Open the page from **Purchases & sales → View/Set meetup** using the order ID in
+the URL. Only the seller can drop or move the pin, and only while the order is
+pending; the buyer can then confirm or ask for another spot. If the buyer has
+already confirmed, the location is locked (the API returns `409`).
