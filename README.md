@@ -377,35 +377,7 @@ IT 314/
     └── uploads/               # listing photos (gitignored)
 ```
 
-## 10. SIA / Web Systems alignment
-
-This section records how the running system satisfies the joint **Web Systems**
-and **System Integration and Architecture** requirements. The formal SIA
-document, diagrams, Gantt chart, and presentation are separate submission
-artifacts — the implementation below is what those artifacts must describe.
-
-| Requirement | Evidence in this project |
-| --- | --- |
-| Functional website with a clear purpose | Campus marketplace with auth, 100 listings, campus filters, orders, messages, meetups, and admin reporting |
-| Two or more systems/technologies integrated | SQLite, Express REST API, session/bcrypt auth, Nominatim geocoding API, OpenStreetMap/CARTO tiles, Leaflet, Chart.js |
-| Data flows correctly between components | `/api/campuses/:id/map`, `/api/listings/:id`, the meetup endpoints, and the admin data lab show each hop |
-| Architecture is clearly implemented | Strict 3-tier split: `public/`, `routes→controllers→services`, `models/ + config/db.js + database/` |
-| Professional, consistent, user-friendly UI | BSU-red brutalist theme, campus photo hero, responsive layout, one navigation pattern on all pages |
-| Realistic problem + innovative use of integration | Cross-campus student trading with a map-based meetup agreement between seller and buyer |
-| Live demonstration | Campus map, OSM→CARTO fallback, propose→confirm meetup flow, admin SQL/data pipeline |
-
-**On the database:** the SIA brief lists MySQL/MariaDB as examples, not mandates.
-SQLite was chosen because it is embedded, zero-configuration, reproduces the demo
-with one command, and still keeps all SQL inside the data tier. A production
-deployment could swap it for MySQL/PostgreSQL mainly by changing `config/db.js`,
-the `models/` files, and the seed script; the application tier would stay the same.
-
-**Still needed for full submission:** the formal SIA document (Chapters I–IV),
-DFD context and level-1 diagrams, ERD, use-case and other UML diagrams, a Gantt
-chart with SDLC phases and dependencies, resource/cost and training plans, a
-testing plan, a configuration-management/change plan, and the presentation deck.
-
-## 11. Troubleshooting
+## 10. Troubleshooting
 
 **`npm install` fails on better-sqlite3**
 It normally installs a prebuilt binary. If it tries to compile, install the "Desktop development with C++" workload from Visual Studio Build Tools, or use Node LTS (20/22).
