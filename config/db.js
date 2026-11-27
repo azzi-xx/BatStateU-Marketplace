@@ -112,6 +112,22 @@ function migrate() {
     db.exec('ALTER TABLE campuses ADD COLUMN map_checked_at TEXT');
   }
 
+  // Meetup columns for databases created before the map meetup feature.
+  const orderColumns = {
+    meetup_latitude: 'REAL',
+    meetup_longitude: 'REAL',
+    meetup_label: 'TEXT',
+    meetup_status: "TEXT NOT NULL DEFAULT 'none'",
+    meetup_revision: 'INTEGER NOT NULL DEFAULT 0',
+    meetup_proposed_at: 'TEXT',
+    meetup_confirmed_at: 'TEXT',
+  };
+  for (const [column, definition] of Object.entries(orderColumns)) {
+    if (!hasColumn('orders', column)) {
+      db.exec(`ALTER TABLE orders ADD COLUMN ${column} ${definition}`);
+    }
+  }
+
   db.exec('CREATE INDEX IF NOT EXISTS idx_listings_campus ON listings (campus_id)');
 }
 

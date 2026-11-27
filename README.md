@@ -159,6 +159,8 @@ Registration is restricted to `@g.batstate-u.edu.ph` addresses. To change that, 
 
 Accounts that do not use the BatStateU student format (for example the seeded `guest.user@gmail.com`) are marked **Outside org** in the UI. Students choose a campus at registration and can change it later from `/account.html`.
 
+After seeding, order **#18** already has a meetup pinned by Juan (seller) for Maria (buyer), so you can log in as either account to demo the propose → confirm flow immediately.
+
 ## 5. Pages
 
 | Page | URL | Notes |
@@ -169,7 +171,8 @@ Accounts that do not use the BatStateU student format (for example the seeded `g
 | Sign up | `/register.html` | School-email validation, campus picker, bcrypt hashing |
 | Post / edit item | `/sell.html` (`?id=` to edit) | Photo upload, live preview, campus defaults to the seller's |
 | My listings | `/account.html` | Edit/delete items and change your campus |
-| Purchases & sales | `/orders.html` | Requests you sent, sales waiting for your confirmation |
+| Purchases & sales | `/orders.html` | Requests you sent, sales waiting for your confirmation, meetup status |
+| Arrange meetup | `/meetup.html?id=<orderId>` | Seller drops a pin on the map; buyer confirms or asks for another spot |
 | Messages | `/messages.html` | Polled conversations, one thread per listing |
 | Admin dashboard | `/admin/dashboard.html` | KPIs, Chart.js charts, recent orders, top sellers — admins only |
 | Admin users | `/admin/users.html` | Search, suspend, and reactivate students |
@@ -199,8 +202,11 @@ Owner-only rules are enforced in the **service layer**, not just hidden in the U
 | PATCH | `/api/listings/:id` | ✔ owner | Update |
 | DELETE | `/api/listings/:id` | ✔ owner | Soft delete (`status = 'removed'`) |
 | GET | `/api/orders` | ✔ | My orders (`?view=all\|buying\|selling`) |
+| GET | `/api/orders/:id` | ✔ party | One order with meetup details and tile config |
 | POST | `/api/orders` | ✔ | Request to buy `{ listingId, note? }` |
 | PATCH | `/api/orders/:id` | ✔ party | `{ action: "cancel" \| "complete" }` |
+| POST | `/api/orders/:id/meetup` | ✔ seller | `{ latitude, longitude, label? }` |
+| PATCH | `/api/orders/:id/meetup` | ✔ buyer | `{ action: "confirm" \| "reject" }` |
 | GET | `/api/messages` | ✔ | Thread list + unread total |
 | GET | `/api/messages/unread` | ✔ | Number for the nav badge |
 | GET | `/api/messages/thread/:listingId` | ✔ | One conversation (`?partnerId=` for the seller); marks read |
@@ -238,7 +244,9 @@ listings(id, seller_id → users, category_id → categories, campus_id → camp
          views, created_at, updated_at)
 
 orders(id, listing_id → listings, buyer_id → users, seller_id → users,
-       amount_centavos, status, note, created_at, updated_at, completed_at)
+       amount_centavos, status, note, created_at, updated_at, completed_at,
+       meetup_latitude, meetup_longitude, meetup_label, meetup_status,
+       meetup_revision, meetup_proposed_at, meetup_confirmed_at)
 
 messages(id, listing_id → listings, sender_id → users, recipient_id → users,
          body, read_at, created_at)
@@ -254,6 +262,7 @@ Design decisions worth mentioning in your defense:
   `CREATE UNIQUE INDEX ... ON orders (listing_id) WHERE status = 'pending'`.
 - **Status transitions are transactional** (`better-sqlite3` `db.transaction`): a completed order and its sold listing are written together, or neither is.
 - **Messaging is threaded by listing**: a thread is `(listing, buyer, seller)`, so there is always an item being discussed.
+- **Meetup is optional and agreed on the map.** The seller pins a point, the buyer confirms or rejects it, and each change increments `meetup_revision`. Role and state rules live in `services/order.service.js` (seller-only propose, buyer-only response, pending-only edits).
 - **Dashboard numbers are aggregated in SQL** (`GROUP BY`, conditional `SUM`); the browser only draws them with Chart.js.
 - **Campus coordinates are data, not hardcoded UI.** They live in `campuses` so the map, the filter, and the listing share one source of truth. The reverse-geocoded address is cached in the same row, which keeps the external API call to once per campus per day.
 - **CHECK constraints** on `role`, `status`, `item_condition`, and non-negative prices.
@@ -336,7 +345,7 @@ IT 314/
 │   └── session.js
 └── public/                    # TIER 1 — presentation
     ├── index.html  login.html  register.html
-    ├── listing.html  sell.html  account.html
+    ├── listing.html  sell.html  account.html  meetup.html
     ├── orders.html  messages.html  404.html
     ├── admin/
     │   ├── dashboard.html     # KPI cards + Chart.js
@@ -347,7 +356,7 @@ IT 314/
     ├── css/style.css
     ├── vendor/leaflet/            # vendored Leaflet JS, CSS, marker icons
     ├── js/ api.js  app.js  auth.js  marketplace.js  listing.js  sell.js
-    │        account.js  orders.js  messages.js  admin.js
+    │        account.js  orders.js  meetup.js  messages.js  admin.js
     │        admin-dashboard.js  admin-users.js  admin-listings.js  admin-orders.js  admin-data.js
     └── uploads/               # listing photos (gitignored)
 ```

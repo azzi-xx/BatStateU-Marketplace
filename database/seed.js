@@ -912,6 +912,18 @@ async function seed() {
     "UPDATE listings SET status = ?, updated_at = ? WHERE id = ?"
   );
 
+  const setMeetup = db.prepare(`
+    UPDATE orders
+       SET meetup_latitude = @latitude,
+           meetup_longitude = @longitude,
+           meetup_label = @label,
+           meetup_status = @status,
+           meetup_revision = @revision,
+           meetup_proposed_at = @proposedAt,
+           meetup_confirmed_at = @confirmedAt
+     WHERE id = @id
+  `);
+
   const run = db.transaction(() => {
     // Campuses
     const campusIds = {};
@@ -995,13 +1007,14 @@ async function seed() {
     }
 
     // Orders — the order rows and the listing statuses are written together.
+    const orderIds = [];
     for (const order of ALL_ORDERS) {
       const listing = ALL_LISTINGS[order.listing];
       const createdAt = sqliteDate(order.daysAgo);
       const completedAt =
         order.status === 'completed' ? sqliteDate(Math.max(0, order.daysAgo - 1)) : null;
 
-      insertOrder.run({
+      const info = insertOrder.run({
         listingId: listingIds[order.listing],
         buyerId: userIds[order.buyer],
         sellerId: userIds[listing.seller],
@@ -1012,12 +1025,50 @@ async function seed() {
         updatedAt: completedAt || createdAt,
         completedAt,
       });
+      orderIds.push(Number(info.lastInsertRowid));
 
       if (order.status === 'completed') {
         setListingStatus.run('sold', completedAt, listingIds[order.listing]);
       } else if (order.status === 'pending') {
         setListingStatus.run('reserved', createdAt, listingIds[order.listing]);
       }
+    }
+
+    // Demo meetups: Juan (seller) pinned a spot that Maria (buyer) can confirm,
+    // and a completed order shows what a confirmed meetup looks like.
+    const demoCampus = CAMPUSES[0];
+    const pendingForDemo = db
+      .prepare(
+        "SELECT id FROM orders WHERE buyer_id = ? AND seller_id = ? AND status = 'pending' LIMIT 1"
+      )
+      .get(userIds[1], userIds[0]);
+    if (pendingForDemo) {
+      setMeetup.run({
+        id: pendingForDemo.id,
+        latitude: demoCampus.latitude + 0.0004,
+        longitude: demoCampus.longitude + 0.0003,
+        label: 'Main library lobby',
+        status: 'proposed',
+        revision: 1,
+        proposedAt: sqliteDate(1, 60),
+        confirmedAt: null,
+      });
+    }
+
+    const completedForDemo = db
+      .prepare("SELECT id FROM orders WHERE seller_id = ? AND status = 'completed' LIMIT 1")
+      .get(userIds[0]);
+    if (completedForDemo) {
+      setMeetup.run({
+        id: completedForDemo.id,
+        latitude: demoCampus.latitude - 0.0003,
+        longitude: demoCampus.longitude + 0.0002,
+        label: 'Gate 2 entrance',
+        status: 'confirmed',
+        revision: 1,
+        proposedAt: sqliteDate(4),
+        confirmedAt: sqliteDate(3),
+      });
     }
 
     // Messages

@@ -18,16 +18,29 @@ const ORDER_SELECT = `
     o.created_at      AS createdAt,
     o.updated_at      AS updatedAt,
     o.completed_at    AS completedAt,
+    o.meetup_latitude    AS meetupLatitude,
+    o.meetup_longitude   AS meetupLongitude,
+    o.meetup_label       AS meetupLabel,
+    o.meetup_status      AS meetupStatus,
+    o.meetup_revision    AS meetupRevision,
+    o.meetup_proposed_at AS meetupProposedAt,
+    o.meetup_confirmed_at AS meetupConfirmedAt,
     l.title           AS listingTitle,
     l.image_path      AS listingImage,
     l.status          AS listingStatus,
     c.name            AS categoryName,
     c.slug            AS categorySlug,
+    lca.id            AS listingCampusId,
+    lca.name          AS listingCampusName,
+    lca.slug          AS listingCampusSlug,
+    lca.latitude      AS listingCampusLatitude,
+    lca.longitude     AS listingCampusLongitude,
     b.full_name       AS buyerName,
     s.full_name       AS sellerName
   FROM orders o
   JOIN listings  l ON l.id = o.listing_id
   JOIN categories c ON c.id = l.category_id
+  LEFT JOIN campuses lca ON lca.id = l.campus_id
   JOIN users     b ON b.id = o.buyer_id
   JOIN users     s ON s.id = o.seller_id
 `;
@@ -120,6 +133,35 @@ function countPendingForSeller(sellerId) {
     .get(sellerId).n;
 }
 
+/** Seller pins a meetup spot. A rejection simply starts a new revision. */
+function proposeMeetup(id, { latitude, longitude, label }) {
+  db.prepare(
+    `UPDATE orders
+        SET meetup_latitude    = @latitude,
+            meetup_longitude   = @longitude,
+            meetup_label       = @label,
+            meetup_status      = 'proposed',
+            meetup_revision    = meetup_revision + 1,
+            meetup_proposed_at = datetime('now'),
+            meetup_confirmed_at = NULL,
+            updated_at         = datetime('now')
+      WHERE id = @id`
+  ).run({ id, latitude, longitude, label });
+  return findById(id);
+}
+
+/** Buyer confirms or rejects the current proposal. */
+function respondMeetup(id, status) {
+  const confirmedAt = status === 'confirmed' ? ", meetup_confirmed_at = datetime('now')" : '';
+  db.prepare(
+    `UPDATE orders
+        SET meetup_status = @status${confirmedAt},
+            updated_at    = datetime('now')
+      WHERE id = @id`
+  ).run({ id, status });
+  return findById(id);
+}
+
 module.exports = {
   findById,
   findPendingForListing,
@@ -132,4 +174,6 @@ module.exports = {
   completeWithListing,
   cancelWithRelease,
   countPendingForSeller,
+  proposeMeetup,
+  respondMeetup,
 };

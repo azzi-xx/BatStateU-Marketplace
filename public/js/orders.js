@@ -31,6 +31,12 @@
     const status = ORDER_STATUS[order.status] || { label: order.status, cls: 'outline' };
     const counterpart = order.isBuyer ? order.seller : order.buyer;
     const partnerId = order.isBuyer ? order.seller.id : order.buyer.id;
+    const meetupStatus = (order.meetup && order.meetup.status) || 'none';
+    const meetupNote = {
+      proposed: '📍 Meetup location proposed',
+      confirmed: '✓ Meetup location confirmed',
+      rejected: '📍 Waiting for a new meetup spot',
+    }[meetupStatus];
 
     const actions = [];
 
@@ -43,6 +49,11 @@
       actions.push(`<button class="btn btn--danger btn--sm" type="button" data-cancel="${order.id}">Cancel request</button>`);
     }
 
+    actions.push(
+      `<a class="btn btn--ghost btn--sm" href="/meetup.html?id=${order.id}">${
+        meetupStatus === 'none' ? 'Set meetup' : 'View meetup'
+      }</a>`
+    );
     actions.push(
       `<a class="btn btn--ghost btn--sm" href="/messages.html?listing=${order.listing.id}&partner=${partnerId}">Message</a>`
     );
@@ -61,6 +72,9 @@
             · Order #${order.id}
           </p>
           ${order.note ? `<p class="order-card__note">“${escapeHtml(order.note)}”</p>` : ''}
+          ${meetupNote ? `<p class="order-card__meetup">${meetupNote}${
+            order.meetup && order.meetup.label ? ` · ${escapeHtml(order.meetup.label)}` : ''
+          }</p>` : ''}
           <div class="order-card__actions">
             <span class="order-card__price">${peso(order.amount)}</span>
             <div class="order-card__buttons">${actions.join('')}</div>

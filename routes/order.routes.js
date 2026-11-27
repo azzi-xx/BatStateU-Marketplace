@@ -9,6 +9,9 @@ router.use(requireAuth);
 
 router.get('/', orderController.mine);
 router.post('/', orderController.request);
+router.get('/:id', orderController.detail);
+router.post('/:id/meetup', orderController.proposeMeetup);
+router.patch('/:id/meetup', orderController.respondMeetup);
 router.patch('/:id', orderController.update);
 
 module.exports = router;

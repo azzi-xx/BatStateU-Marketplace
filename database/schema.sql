@@ -83,7 +83,16 @@ CREATE TABLE IF NOT EXISTS orders (
   note            TEXT,
   created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
   updated_at      TEXT    NOT NULL DEFAULT (datetime('now')),
-  completed_at    TEXT
+  completed_at    TEXT,
+  -- Optional meetup agreed on the map: seller pins, buyer confirms.
+  meetup_latitude    REAL,
+  meetup_longitude   REAL,
+  meetup_label       TEXT,
+  meetup_status      TEXT    NOT NULL DEFAULT 'none'
+                     CHECK (meetup_status IN ('none', 'proposed', 'confirmed', 'rejected')),
+  meetup_revision    INTEGER NOT NULL DEFAULT 0,
+  meetup_proposed_at TEXT,
+  meetup_confirmed_at TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_orders_listing ON orders (listing_id);

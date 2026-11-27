@@ -19,4 +19,16 @@ function update(req, res) {
   res.json({ data: orderService.update(parseId(req.params.id), req.user, req.body) });
 }
 
-module.exports = { request, mine, update };
+function detail(req, res) {
+  res.json({ data: orderService.getById(parseId(req.params.id), req.user) });
+}
+
+function proposeMeetup(req, res) {
+  res.json({ data: orderService.proposeMeetup(parseId(req.params.id), req.user, req.body) });
+}
+
+function respondMeetup(req, res) {
+  res.json({ data: orderService.respondMeetup(parseId(req.params.id), req.user, req.body) });
+}
+
+module.exports = { request, mine, update, detail, proposeMeetup, respondMeetup };

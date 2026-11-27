@@ -9,9 +9,18 @@ const AppError = require('../utils/AppError');
 const validate = require('../utils/validate');
 const orderModel = require('../models/order.model');
 const listingModel = require('../models/listing.model');
+const mapService = require('./map.service');
 
 const ACTIONS = ['complete', 'cancel'];
+const MEETUP_RESPONSES = ['confirm', 'reject'];
 const VIEWS = ['buying', 'selling', 'all'];
+
+function coordinate(value, label, min, max) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) throw AppError.unprocessable(`${label} must be a number.`);
+  if (n < min || n > max) throw AppError.unprocessable(`${label} is outside the map.`);
+  return n;
+}
 
 function toApi(row, viewer = null) {
   if (!row) return null;
@@ -29,9 +38,27 @@ function toApi(row, viewer = null) {
       imagePath: row.listingImage,
       status: row.listingStatus,
       category: { name: row.categoryName, slug: row.categorySlug },
+      campus: row.listingCampusId
+        ? {
+            id: row.listingCampusId,
+            name: row.listingCampusName,
+            slug: row.listingCampusSlug,
+            latitude: row.listingCampusLatitude,
+            longitude: row.listingCampusLongitude,
+          }
+        : null,
     },
     buyer: { id: row.buyerId, name: row.buyerName },
     seller: { id: row.sellerId, name: row.sellerName },
+    meetup: {
+      status: row.meetupStatus,
+      label: row.meetupLabel,
+      latitude: row.meetupLatitude,
+      longitude: row.meetupLongitude,
+      revision: row.meetupRevision,
+      proposedAt: row.meetupProposedAt,
+      confirmedAt: row.meetupConfirmedAt,
+    },
     isBuyer: viewer ? viewer.id === row.buyerId : false,
     isSeller: viewer ? viewer.id === row.sellerId : false,
   };
@@ -121,4 +148,59 @@ function update(id, viewer, input) {
   return toApi(orderModel.cancelWithRelease(id), viewer);
 }
 
-module.exports = { request, mine, update, toApi };
+function getById(id, viewer) {
+  const order = orderModel.findById(id);
+  if (!order) throw AppError.notFound('That order does not exist.');
+
+  const isParty = viewer.id === order.buyerId || viewer.id === order.sellerId;
+  if (!isParty && viewer.role !== 'admin') {
+    throw AppError.forbidden('This order is not yours.');
+  }
+  return { ...toApi(order, viewer), map: mapService.publicConfig() };
+}
+
+/** Seller drops a pin on the map; the buyer will be asked to confirm it. */
+function proposeMeetup(id, viewer, input) {
+  const order = orderModel.findById(id);
+  if (!order) throw AppError.notFound('That order does not exist.');
+  if (order.sellerId !== viewer.id) {
+    throw AppError.forbidden('Only the seller can set the meetup location.');
+  }
+  if (order.status !== 'pending') {
+    throw AppError.conflict('Meetup details can only be set for a pending request.');
+  }
+  if (order.meetupStatus === 'confirmed') {
+    throw AppError.conflict('This meetup is already confirmed.');
+  }
+
+  const latitude = coordinate(input.latitude, 'Latitude', -90, 90);
+  const longitude = coordinate(input.longitude, 'Longitude', -180, 180);
+  const label = validate.text(input.label, 'Meetup label', { min: 2, max: 80, required: false });
+
+  return toApi(
+    orderModel.proposeMeetup(id, { latitude, longitude, label: label || null }),
+    viewer
+  );
+}
+
+/** Buyer confirms the pin or asks the seller for another one. */
+function respondMeetup(id, viewer, input) {
+  const action = validate.oneOf(input.action, MEETUP_RESPONSES, 'Meetup action');
+
+  const order = orderModel.findById(id);
+  if (!order) throw AppError.notFound('That order does not exist.');
+  if (order.buyerId !== viewer.id) {
+    throw AppError.forbidden('Only the buyer can respond to a meetup location.');
+  }
+  if (order.status !== 'pending') {
+    throw AppError.conflict('This order is no longer pending.');
+  }
+  if (order.meetupStatus !== 'proposed') {
+    throw AppError.conflict('There is no meetup proposal to respond to.');
+  }
+
+  const status = action === 'confirm' ? 'confirmed' : 'rejected';
+  return toApi(orderModel.respondMeetup(id, status), viewer);
+}
+
+module.exports = { request, mine, update, getById, proposeMeetup, respondMeetup, toApi };
